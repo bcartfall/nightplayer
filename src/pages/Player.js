@@ -281,7 +281,7 @@ export default function Player(props) {
                       onReady={onReady}
                       onPause={onPause}
                       onProgress={onProgress}
-                      progressInterval={33}
+                      progressInterval={1000}
                       width='100%'
                       height='100%'
                     />
