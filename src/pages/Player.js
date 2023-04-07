@@ -5,9 +5,9 @@
  */
 
 import React, { useCallback, useContext, useEffect, useRef, useState, } from 'react';
-import ReactPlayer from 'react-player'
-import { useParams } from "react-router-dom";
-import { Box, Alert, Grid, Card, Typography, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Button, FormGroup, } from '@mui/material';
+import ReactPlayer from 'react-player';
+import { useParams, useNavigate, } from "react-router-dom";
+import { Box, Alert, Grid, Card, Typography, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Button, FormGroup, Snackbar, } from '@mui/material';
 
 import LayoutContext from '../contexts/LayoutContext';
 import VideosContext from '../contexts/VideosContext';
@@ -18,14 +18,17 @@ import VideoList from '../components/VideoList';
 import Loading from '../components/Loading';
 
 export default function Player(props) {
-  const { setTitle } = useContext(LayoutContext);
+  const { setTitle, } = useContext(LayoutContext);
   const { videos, saveVideo, loading } = useContext(VideosContext);
+  const navigate = useNavigate();
   const playerRef = useRef(null);
+  const playerContainerRef = useRef(null);
+  const [snack, setSnack] = useState({open: false, message: ''});
   const [playing, setPlaying] = useState(false);
-  const progressRef = useRef(null);
   const lastSaveRef = useRef(0);
   const [contextMenu, setContextMenu] = useState(null);
-  const [jumpDialog, setJumpDialog] = useState(null);
+  const [jumpDialog, setJumpDialog] = useState({open: false});
+  const seekPosition = useRef(0);
 
   // get active video
   let { uuid } = useParams(); // get id from url (e.g. /player/:uuid)
@@ -49,69 +52,150 @@ export default function Player(props) {
       }
     }
     setVideo(video);
-  }, [uuid, videos]);
 
-  const saveProgress = useCallback(() => {
+    setPlaying(true);
+  }, [uuid, videos, setVideo, setPlaying,]);
+
+  const saveProgress = useCallback((source) => {
     if (!video) {
       return;
     }
+    //console.log('Saving video', source);
     lastSaveRef.current = Date.now();
     saveVideo(video);
   }, [video, saveVideo]);
 
-  useEffect(() => {
-    if (playerRef.current != null) {
-      setPlaying(true); // autoplay on electron
+  const skip = useCallback((d) => {
+    let index = -1;
+    const l = videos.length;
+    for (let i=0;i<l;i++) {
+      if (video.uuid === videos[i].uuid) {
+        index = i;
+        break;
+      }
+    }
+    if (index >= -1 && index + d < l && index + d >= 0) {
+      navigate('/player/' + videos[index + d].uuid);
+    }
+  }, [videos, video, navigate,]);
+
+  const onKeyDown = useCallback((e) => {
+    //console.log('onKeyDown', e);
+
+    const key = e.key.toUpperCase();
+    switch (key) {
+      case 'ARROWLEFT':
+        seekPosition.current -= 5;
+        setSnack({
+          open: true,
+          message: `Seeking ${seekPosition.current} seconds.`,
+        });
+        return true;
+      case 'ARROWRIGHT': 
+        seekPosition.current += 5;
+        setSnack({
+          open: true,
+          message: `Seeking +${seekPosition.current} seconds.`,
+        });
+        return true;
+      case 'F': 
+        // fullscreen
+        e.preventDefault();
+
+        if (!document.fullscreenElement) {
+          // enter fullscreen
+          //const iframe = findDOMNode(playerRef.current?.player).getElementsByTagName('iframe')[0];
+          //iframe.requestFullscreen();
+          playerContainerRef.current.requestFullscreen();
+        } else {
+          // exit fullscreen
+          document.exitFullscreen();
+        }
+        return true;
+      case ' ': 
+      case 'K':
+        e.preventDefault();
+        // play / pause
+        let message = playing ? 'Pausing.' : 'Playing.';
+        setSnack({open: true, message,});
+        setPlaying(!playing);
+        setTimeout(() => {
+          setSnack({open: false, message,});
+        }, 500);
+        return true;
+      default:
     }
 
-    return async () => {
-      if (progressRef.current) {
-        console.log('Clearing progress interval.');
-        clearInterval(progressRef.current);
+    if (e.shiftKey) {
+      switch (key) {
+        case 'N':
+          // go to next video
+          return skip(1);
+        case 'P':
+          // go to previous video
+          return skip(-1);
+        default:
       }
+    }
+  }, [playing, setPlaying, seekPosition, setSnack, playerContainerRef, skip,]);
 
-      // save position on dismount
-      saveProgress();
+  const onKeyUp = useCallback(() => {
+    if (seekPosition.current !== 0) {
+      console.log('seeking', seekPosition.current, video.position + seekPosition.current);
+      playerRef.current?.seekTo(video.position + seekPosition.current, 'seconds');
+      setTimeout(() => {
+        setSnack({...snack, open: false,});
+      }, 500);
+    }
+    seekPosition.current = 0;
+  }, [seekPosition, video, playerRef, snack, setSnack,]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('keyup', onKeyUp, true);
+
+    return async () => {
+      // remove event listeners
+      document.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('keyup', onKeyUp, true);
     };
-  }, [playerRef, setVideo, saveProgress]);
+  }, [onKeyDown, onKeyUp,]);
+
+  useEffect(() => {
+    return async () => {
+      // save position on dismount
+      saveProgress('dismount');
+    };
+  }, [saveProgress]);
 
   const onProgress = useCallback(() => {
     // save video position
     if (playerRef.current) {
+      //console.log('onProgress', playerRef.current.getCurrentTime());
       const time = playerRef.current.getCurrentTime();
       video.position = time;
     }
 
     // save to DB every 10s or on pause
     if (Date.now() - lastSaveRef.current >= 10000) {
-      saveProgress();
+      saveProgress('progress');
     }
-  }, [video, saveProgress]);
+  }, [video, saveProgress,]);
 
   const onReady = useCallback((event) => {
     console.log('onReady', event);
-    setPlaying(true);
     console.log(`Resuming playback at ${video.position}.`);
     playerRef.current.seekTo(video.position, 'seconds');
 
-    if (progressRef.current) {
-      console.log('Clearing progress interval.');
-      clearInterval(progressRef.current);
-    }
-    console.log('Setting progress interval.');
-    progressRef.current = setInterval(onProgress, 33);
     lastSaveRef.current = Date.now();
-  }, [setPlaying, video, onProgress]);
+  }, [video,]);
 
   const onPause = useCallback(() => {
     if (playerRef.current) {
       video.position = playerRef.current.getCurrentTime();
-      saveProgress();
+      saveProgress('pause');
     }
-  }, [saveProgress, video, playerRef]);
-
-  const onPlay = useCallback(() => {
-  }, []);
+  }, [saveProgress, video, playerRef,]);
 
   const handleContextMenu = (event) => {
     event.preventDefault();
@@ -188,17 +272,26 @@ export default function Player(props) {
             <Grid container spacing={2}>
               <Grid item sm={8}>
                 <Box key="player" sx={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'scale-down', overflow: 'hidden', }}>
-                  <ReactPlayer 
-                    ref={playerRef} 
-                    url={video.url ?? ''}
-                    playing={playing}
-                    controls={!!video.controls}
-                    onReady={onReady}
-                    onPause={onPause}
-                    onPlay={onPlay}
-                    width='100%'
-                    height='100%'
-                  />
+                  <div ref={playerContainerRef} style={{width: '100%', height: '100%'}}>
+                    <ReactPlayer 
+                      ref={playerRef} 
+                      url={video.url ?? ''}
+                      playing={playing}
+                      controls={!!video.controls}
+                      onReady={onReady}
+                      onPause={onPause}
+                      onProgress={onProgress}
+                      progressInterval={33}
+                      width='100%'
+                      height='100%'
+                    />
+                    <Snackbar
+                      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                      open={snack.open}
+                      message={snack.message}
+                      key="snackbar-player"
+                    />
+                  </div>
                 </Box>
                 <Box>
                   <Typography sx={{ mt: 1, mb: 1, fontWeight: 'bold', textAlign: 'left', fontSize: '1.2rem' }}>
