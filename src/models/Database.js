@@ -4,8 +4,10 @@
  * See README.md
  */
 
-import { initializeApp } from "firebase/app";
+import { initializeApp, deleteApp } from "firebase/app";
 import { getFirestore, collection, getDocs, deleteDoc, getDoc, setDoc, doc, query, orderBy } from "firebase/firestore";
+import { getAuth, signInAnonymously } from "firebase/auth";
+
 import { openDB } from 'idb';
 
 class Database {
@@ -16,8 +18,14 @@ class Database {
         if (driver === 'firebase') {
             // init firebase
             // https://firebase.google.com/docs/firestore/quickstart#web-version-9
-            const app = initializeApp(settings.firebase);
-            this._db = getFirestore(app);
+            if (this._firebaseApp) {
+                await deleteApp(this._firebaseApp);
+            }
+            this._firebaseApp = initializeApp(settings.firebase);
+            this._db = getFirestore(this._firebaseApp);
+
+            const auth = getAuth();
+            await signInAnonymously(auth);
         } else {
             // init indexeddb
             this._db = await openDB('nightplayer', 1, {

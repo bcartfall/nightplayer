@@ -5,15 +5,17 @@
  */
 
 import React, { useCallback, useContext, useEffect, useState, } from 'react';
-import { Typography, CircularProgress, Alert, } from '@mui/material';
+import { Alert, } from '@mui/material';
 
 import VideoComponent from '../components/VideoComponent';
+import Loading from '../components/Loading';
+
 import LayoutContext from '../contexts/LayoutContext';
 import VideosContext from '../contexts/VideosContext';
 
-export default function Main({ loading }) {
+export default function Main(props) {
   const { setTitle } = useContext(LayoutContext);
-  const { videos, changeVideoOrder } = useContext(VideosContext);
+  const { loading, videos, changeVideoOrder } = useContext(VideosContext);
   const [dragVideo, setDragVideo] = useState(null);
   const [dragIndex, setDragIndex] = useState(null);
 
@@ -90,10 +92,7 @@ export default function Main({ loading }) {
   return (
     <div className="page">
       {loading && (
-        <>
-          <CircularProgress />
-          <Typography sx={{mt: 2}}>Loading...</Typography>
-        </>
+        <Loading />
       )}
       {!loading && (
         <>

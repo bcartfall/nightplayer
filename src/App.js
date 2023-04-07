@@ -16,7 +16,7 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 
 import React, { useEffect, useState, useCallback, useRef, } from 'react';
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route, } from "react-router-dom";
 
 import Layout from './pages/Layout';
 import Main from './pages/Main';
@@ -46,11 +46,16 @@ export default function App(props) {
   const dragRef = useRef(0);
 
   const saveSettings = useCallback(async (nSettings) => {
-    console.log('saveSettings', nSettings);
+    setSettings(nSettings);
+
     // if database driver changes, reload videos
     if (nSettings.databaseDriver !== settings.databaseDriver || JSON.stringify(nSettings.firebase) !== JSON.stringify(settings.firebase)) {
       shouldLoadVideos.current = true;
-      await Database.setDriver(nSettings.databaseDriver, nSettings);
+      try {
+        await Database.setDriver(nSettings.databaseDriver, nSettings);
+      } catch (e) {
+        setError(e.toString());
+      }
     }
 
     if (shouldLoadVideos.current) {
@@ -66,7 +71,6 @@ export default function App(props) {
     }
     localStorage.setItem('settings', JSON.stringify(nSettings));
     TwitchAPI.setClient(nSettings.twitch);
-    setSettings(nSettings);
   }, [settings, setSettings, setError]);
 
   const addVideoUrl = useCallback(async ({url, controls}, callback) => {
@@ -81,7 +85,16 @@ export default function App(props) {
     }
 
     // get video information
-    await video.loadRemoteData(settings);
+    try {
+      await video.loadRemoteData(settings);
+    } catch (e) {
+      console.error(e);
+      setError(e.toString());
+      if (callback) {
+        callback(null);
+      }
+      return false;
+    }
 
     const nVideos = [...videos, video];
     setVideos(nVideos);
@@ -92,7 +105,7 @@ export default function App(props) {
     console.log('Done storing.');
 
     if (callback) {
-      callback();
+      callback(video);
     }
   }, [videos, setVideos, settings]);
 
@@ -113,9 +126,13 @@ export default function App(props) {
     }
   };
 
-  const saveVideo = useCallback(async (video) => {
+  const saveVideo = useCallback(async (video, callback) => {
     console.log('Saving video', video);
     await Database.set('videos', video.uuid, video.toObject());
+
+    if (callback) {
+      callback(video);
+    }
   }, []);
 
   useEffect(() => {
@@ -143,7 +160,12 @@ export default function App(props) {
         };
       }
       setSettings(localSettings);
-      await Database.setDriver(localSettings.databaseDriver ?? 'local', localSettings);
+
+      try {
+        await Database.setDriver(localSettings.databaseDriver ?? 'local', localSettings);
+      } catch (e) {
+        setError(e.toString());
+      }
       TwitchAPI.setClient(localSettings.twitch);
 
       // deserliaze list of videos
@@ -249,13 +271,13 @@ export default function App(props) {
   return (
     <ThemeProvider theme={darkTheme}>
       <LayoutContext.Provider value={{ title, setTitle, error, snack, setSnack, }}>
-        <VideosContext.Provider value={{ videos, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, }}>
+        <VideosContext.Provider value={{ videos, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, loading, }}>
           <CssBaseline />
           <div className="app" onDrop={onDrop} onDragEnter={onDragEnter} onDragOver={(e) => e.preventDefault()} onDragLeave={onDragLeave}>
             <HashRouter>
               <Routes>
                 <Route path="/" element={<Layout />}>
-                  <Route index element={<Main loading={loading} />} />
+                  <Route index element={<Main />} />
                   <Route path="player/:uuid" element={<Player />} />
                   <Route path="settings" element={<Settings settings={settings} saveSettings={saveSettings} />} />
                   <Route path="*" element={<Main loading={loading} />} />

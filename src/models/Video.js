@@ -115,52 +115,44 @@ class Video {
         if (this.source === 'youtube') {
             // youtube
             console.log('Getting youtube information.');
-            try {
-                if (!settings.youtube.apiKey) {
-                    throw new Error('Youtube Key has not been configured.');
-                }
-
-                const videoId = youtube_parser(this.url);
-                if (!videoId) {
-                    throw new Error('Error parsing videoId from url');
-                }
-    
-                const url = `https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics&id=${videoId}&key=${settings.youtube.apiKey}`;
-                let response = await fetch(url);
-                let json = await response.json();
-                console.log('YouTube API Response', json);
-
-                this.url = `https://www.youtube.com/watch?v=${json.items[0].id}`;
-                this.title = json.items[0].snippet.title;
-                this.description = json.items[0].snippet.description;
-                this.thumbnailUrl = json.items[0].snippet.thumbnails.standard.url;
-                this.duration = YTDurationToSeconds(json.items[0].contentDetails.duration);
-            } catch(error) {
-                console.error(error);
+            if (!settings.youtube.apiKey) {
+                throw new Error('Youtube Key has not been configured.');
             }
+
+            const videoId = youtube_parser(this.url);
+            if (!videoId) {
+                throw new Error('Error parsing videoId from url');
+            }
+
+            const url = `https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics&id=${videoId}&key=${settings.youtube.apiKey}`;
+            let response = await fetch(url);
+            let json = await response.json();
+            console.log('YouTube API Response', json);
+
+            this.url = `https://www.youtube.com/watch?v=${json.items[0].id}`;
+            this.title = json.items[0].snippet.title;
+            this.description = json.items[0].snippet.description;
+            this.thumbnailUrl = json.items[0].snippet.thumbnails.standard.url;
+            this.duration = YTDurationToSeconds(json.items[0].contentDetails.duration);
         } else if (this.source === 'twitch') {
             // twitch
             console.log('Getting twitch information.');
-            try {
-                const a = this.url.split("/");
-                const b = a[a.length - 1].split("?");
-                const videoId = b[0];
+            const a = this.url.split("/");
+            const b = a[a.length - 1].split("?");
+            const videoId = b[0];
 
-                const json = await TwitchAPI.get(`https://api.twitch.tv/helix/videos`, {id: videoId});
-                console.log(json);
-                console.log(json.data[0]);
+            const json = await TwitchAPI.get(`https://api.twitch.tv/helix/videos`, {id: videoId});
+            console.log(json);
+            console.log(json.data[0]);
 
-                this.url = json.data[0].url;
-                this.title = json.data[0].title;
-                this.description = json.data[0].description;
-                this.thumbnailUrl = json.data[0].thumbnail_url;
+            this.url = json.data[0].url;
+            this.title = json.data[0].title;
+            this.description = json.data[0].description;
+            this.thumbnailUrl = json.data[0].thumbnail_url;
 
-                // parse twitch duration // 1h22m28s
-                this.duration = parseStringTime(json.data[0].duration);
-                console.log(this);
-            } catch(error) {
-                console.error(error);
-            }
+            // parse twitch duration // 1h22m28s
+            this.duration = parseStringTime(json.data[0].duration);
+            console.log(this);
         }
     }
 };

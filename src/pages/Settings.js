@@ -20,11 +20,14 @@ export default function Settings({ settings, saveSettings, }) {
   const onChange = useCallback((key, value) => {
     let nSettings = {
       ...settings,
-    }
+    };
 
     const a = key.split('.');
     if (a.length > 1) {
-      nSettings[a[0]][a[1]] = value;
+      const cKey = a[0];
+      const child = {...nSettings[cKey]};
+      child[a[1]] = value;
+      nSettings[cKey] = child;
     } else {
       nSettings[key] = value;
     }
@@ -74,12 +77,14 @@ export default function Settings({ settings, saveSettings, }) {
         }
       };
 
+      const firebase = {...nSettings.firebase};
       for (const variable of variables) {
         const value = getValue(variable);
         if (value) {
-          nSettings.firebase[variable] = value;
+          firebase[variable] = value;
         }
       }
+      nSettings.firebase = firebase;
 
       saveSettings(nSettings);
     } catch (e) {

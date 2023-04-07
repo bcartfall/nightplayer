@@ -14,16 +14,23 @@ import RestoreIcon from '@mui/icons-material/Restore';
 
 import VideosContext from '../contexts/VideosContext';
 import LayoutContext from '../contexts/LayoutContext';
+import PlayerContext from '../contexts/PlayerContext';
 
-export default function VideoContextMenu({ video, contextMenu, onClose, }) {
+export default function VideoContextMenu({ video, contextMenu, onClose, currentVideo, setCurrentVideo, }) {
   const { removeVideo, restoreVideo, saveVideo, } = useContext(VideosContext);
   const { setSnack } = useContext(LayoutContext);
+  const playerContext = useContext(PlayerContext);
 
   const onToggleControls = useCallback(() => {
     onClose();
     video.controls = !video.controls;
-    saveVideo(video);
-  }, [video, saveVideo, onClose]);
+    saveVideo(video, () => {
+      if (playerContext.video?.uuid === video.uuid) {
+        // player needs to refresh because reactplayer will not change controls if already loaded
+        window.location.reload(false);
+      }
+    });
+  }, [video, saveVideo, onClose, playerContext,]);
 
   const onCopyAtTime = useCallback(() => {
     let url = video.getUrlAtTime();

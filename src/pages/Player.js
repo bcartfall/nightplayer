@@ -11,12 +11,14 @@ import { Box, Alert, Grid, Card, Typography, } from '@mui/material';
 
 import LayoutContext from '../contexts/LayoutContext';
 import VideosContext from '../contexts/VideosContext';
+import PlayerContext from '../contexts/PlayerContext';
 
 import VideoList from '../components/VideoList';
+import Loading from '../components/Loading';
 
 export default function Player(props) {
   const { setTitle } = useContext(LayoutContext);
-  const { videos, saveVideo } = useContext(VideosContext);
+  const { videos, saveVideo, loading } = useContext(VideosContext);
   const playerRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const progressRef = useRef(null);
@@ -26,7 +28,6 @@ export default function Player(props) {
   let { uuid } = useParams(); // get id from url (e.g. /player/:uuid)
 
   const [video, setVideo] = useState(null);
-  const [controls, setControls] = useState(null);
 
   useEffect(() => {
     // change title
@@ -45,9 +46,6 @@ export default function Player(props) {
       }
     }
     setVideo(video);
-    if (video) {
-      setControls(video.controls);
-    }
   }, [uuid, videos]);
 
   const saveProgress = useCallback(() => {
@@ -113,45 +111,53 @@ export default function Player(props) {
   const onPlay = useCallback(() => {
   }, []);
 
+  if (loading) {
+    return (<Loading />);
+  }
+
   return (
-    <div key={`player-page-${video ? video.uuid : 'none'}`} className="page page-video">
-      {video && (
-        <Grid container spacing={2}>
-          <Grid item sm={8}>
-            <Box key="player" sx={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'scale-down', overflow: 'hidden', }}>
-              <ReactPlayer 
-                ref={playerRef} 
-                url={video.url ?? ''}
-                playing={playing}
-                controls={controls}
-                onReady={onReady}
-                onPause={onPause}
-                onPlay={onPlay}
-                width='100%'
-                height='100%'
-              />
-            </Box>
-            <Box>
-              <Typography sx={{ mt: 1, mb: 1, fontWeight: 'bold', textAlign: 'left', fontSize: '1.2rem' }}>
-                {video.title}
-              </Typography>
-            </Box>
-            <Card variant="outlined" sx={{ textAlign: 'left', color: '#ccc', whiteSpace: 'pre-line', p: 2 }}>
-              <Typography sx={{}}>
-                {video.description}
-              </Typography>
-            </Card>
+    <PlayerContext.Provider value={{ video, }}>
+      <div key={`player-page-${video ? video.uuid : 'none'}`} className="page page-video">
+        {video && (
+          <Grid container spacing={2}>
+            <Grid item sm={8}>
+              <Box key="player" sx={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'scale-down', overflow: 'hidden', }}>
+                <ReactPlayer 
+                  ref={playerRef} 
+                  url={video.url ?? ''}
+                  playing={playing}
+                  controls={!!video.controls}
+                  onReady={onReady}
+                  onPause={onPause}
+                  onPlay={onPlay}
+                  width='100%'
+                  height='100%'
+                />
+              </Box>
+              <Box>
+                <Typography sx={{ mt: 1, mb: 1, fontWeight: 'bold', textAlign: 'left', fontSize: '1.2rem' }}>
+                  {video.title}
+                </Typography>
+              </Box>
+              {video.description && (
+                <Card variant="outlined" sx={{ textAlign: 'left', color: '#ccc', whiteSpace: 'pre-line', p: 2 }}>
+                  <Typography sx={{}}>
+                    {video.description}
+                  </Typography>
+                </Card>
+              )}
+            </Grid>
+            <Grid item sm={4}>
+              <VideoList key="videolist" currentVideo={video} />
+            </Grid>
           </Grid>
-          <Grid item sm={4}>
-            <VideoList key="videolist" currentVideo={video} />
-          </Grid>
-        </Grid>
-      )}
-      {!video && (
-        <Alert severity="warning">
-          Video {uuid} not found.
-        </Alert>
-      )}
-    </div>
+        )}
+        {!video && (
+          <Alert severity="warning">
+            Video {uuid} not found.
+          </Alert>
+        )}
+      </div>
+    </PlayerContext.Provider>
   );
 }

@@ -14,7 +14,7 @@ a {
 }
 
 .page {
-  margin: 0 auto;
+  margin: auto auto;
   min-width: 800px;
   max-width: 800px;
   padding: 15px 0;
@@ -26,9 +26,11 @@ a {
 }
 
 .page-video {
+  margin: 0 auto;
   padding: 32px;
   max-width: none;
   width: 100%;
+  height: 100%;
 }
 
 .video-component .title {

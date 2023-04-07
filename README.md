@@ -25,6 +25,33 @@ Or build the electron application:
 yarn package
 ```
 
+## Database
+
+### IndexedDB
+
+Data is stored locally in your browser. No configuration is required.
+
+### Firebase
+
+Data can be stored online using Firebase as the database driver so that application data is persistant across multiple browsers and devices. 
+
+Create a new Firebase application and configure Firestore. 
+
+1. Copy the Firebase configuration variables in the application settings page.
+2. Configure Firestore to allow anonymouse authentication.
+3. Configure Firestore rules to require authentication.
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
 # Licence
 
 This project is licensed under MIT.
