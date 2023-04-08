@@ -60,10 +60,13 @@ export default function Player(props) {
     if (!video) {
       return;
     }
+    if (loading) {
+      return;
+    }
     //console.log('Saving video', source);
     lastSaveRef.current = Date.now();
     saveVideo(video);
-  }, [video, saveVideo]);
+  }, [loading, video, saveVideo]);
 
   const skip = useCallback((d) => {
     let index = -1;
@@ -156,9 +159,11 @@ export default function Player(props) {
       const qualities = player.getQualities();
       if (qualities.length > 0) {
         // get best quality that fits in screen
-        const screenWidth = window.screen.availWidth;
+        const screenWidth = window.screen.availWidth,
+          scale = window.devicePixelRatio,
+          calcWidth = screenWidth * scale;
         console.log('Qualities', qualities);
-        console.log('Screen width=', screenWidth);
+        console.log(`Screen width=${screenWidth}, scale=${scale}`);
         let bestQuality = null;
         for (const quality of qualities) {
           if (!quality.hasOwnProperty('group')) {
@@ -172,7 +177,7 @@ export default function Player(props) {
             bestQuality = quality;
           }
 
-          if (quality.width < screenWidth) {
+          if (quality.width < calcWidth) {
             // quality too low
             break;
           }
