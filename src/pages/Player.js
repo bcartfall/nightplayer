@@ -149,6 +149,43 @@ export default function Player(props) {
     }
     seekPosition.current = 0;
   }, [seekPosition, video, playerRef, snack, setSnack,]);
+  
+  const chooseBestQuality = useCallback(() => {
+    if (video.source === 'twitch') {
+      const player = playerRef.current.getInternalPlayer();
+      const qualities = player.getQualities();
+      if (qualities.length > 0) {
+        // get best quality that fits in screen
+        const screenWidth = window.screen.availWidth;
+        console.log('Qualities', qualities);
+        console.log('Screen width=', screenWidth);
+        let bestQuality = null;
+        for (const quality of qualities) {
+          if (!quality.hasOwnProperty('group')) {
+            continue;
+          }
+          if (quality.group === 'auto') {
+            continue;
+          }
+
+          if (!bestQuality) {
+            bestQuality = quality;
+          }
+
+          if (quality.width < screenWidth) {
+            // quality too low
+            break;
+          }
+
+          bestQuality = quality;
+        }
+        if (bestQuality) {
+          console.log('Setting twitch quality to ', bestQuality);
+          player.setQuality(bestQuality.group);
+        }
+      }
+    }
+  }, [playerRef, video,]);
 
   useEffect(() => {
     document.addEventListener('keydown', onKeyDown, true);
@@ -187,8 +224,22 @@ export default function Player(props) {
     console.log(`Resuming playback at ${video.position}.`);
     playerRef.current.seekTo(video.position, 'seconds');
 
+    if (video.source === 'twitch') {
+      const player = playerRef.current.getInternalPlayer();
+      // wait for qualities to populate
+      const waitForQualities = () => {
+        const qualities = player.getQualities();
+        if (qualities.length > 0) {
+          chooseBestQuality();
+        } else {
+          setTimeout(waitForQualities, 33);
+        }
+      };
+      waitForQualities();
+    }
+
     lastSaveRef.current = Date.now();
-  }, [video,]);
+  }, [video, chooseBestQuality,]);
 
   const onPause = useCallback(() => {
     if (playerRef.current) {
