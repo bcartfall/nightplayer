@@ -20,6 +20,7 @@ export default function VideoListItem({ video, active, index, }) {
 
   const handleContextMenu = (event) => {
     event.preventDefault();
+    event.stopPropagation();
     setContextMenu(
       contextMenu === null
         ? {

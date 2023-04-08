@@ -259,6 +259,7 @@ export default function Player(props) {
 
   const handleContextMenu = (event) => {
     event.preventDefault();
+    event.stopPropagation();
     setContextMenu(
       contextMenu === null
         ? {

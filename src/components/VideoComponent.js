@@ -20,6 +20,7 @@ export default function VideoComponent({ video, index, dragIndex, dragDirection,
 
   const handleContextMenu = (event) => {
     event.preventDefault();
+    event.stopPropagation();
     setContextMenu(
       contextMenu === null
         ? {
