@@ -111,7 +111,7 @@ class Video {
                 seconds = (p % 60).toString();
             return `${this.url}?t=${hours}h${minutes}m${seconds}s`;
         }
-        return this.url + '?t=' + Math.round(this.position);
+        return this.url + (this.url.includes('?') ? '&' : '?') + 't=' + Math.round(this.position);
     }
 
     getThumbnailUrl(width, height) {
