@@ -36,7 +36,7 @@ jobs:
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Install dependencies
         run: yarn install --frozen-lockfile
-      - name: Test server
+      - name: Build react
         run: yarn build
       - run: echo "Deploying ./build to pages."
       - name: Upload artifact
