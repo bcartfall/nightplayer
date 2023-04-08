@@ -54,7 +54,7 @@ function YTDurationToSeconds(duration) {
 class Video {
     constructor(props) {
         this.uuid = props.uuid ?? uuidv4();
-        this.order = props.order ?? -1;
+        this.order = parseInt(props.order ?? -1, 10);
         this.url = props.url;
 
         // parse source
@@ -73,6 +73,8 @@ class Video {
         this.title = props.title ?? null;
         this.description = props.description ?? null;
         this.controls = props.controls ?? true;
+
+        this._originalAttributes = this.toObject();
     }
 
     toObject() {
@@ -87,6 +89,17 @@ class Video {
             title: this.title,
             description: this.description,
             controls: this.controls,
+        }
+    }
+
+    async save(Database) {
+        const obj = this.toObject();
+        if (JSON.stringify(obj) !== JSON.stringify(this._originalAttributes)) {
+            console.log('Saving video', this);
+            this._originalAttributes = obj;
+            await Database.set('videos', this.uuid, obj);
+        } else {
+            console.log('Not saving video because not changes', this);
         }
     }
 

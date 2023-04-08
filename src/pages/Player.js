@@ -19,7 +19,7 @@ import Loading from '../components/Loading';
 
 export default function Player(props) {
   const { setTitle, } = useContext(LayoutContext);
-  const { videos, saveVideo, loading } = useContext(VideosContext);
+  const { videos, saveVideo, loading, updateLastAction, autoplayRef, } = useContext(VideosContext);
   const navigate = useNavigate();
   const playerRef = useRef(null);
   const playerContainerRef = useRef(null);
@@ -53,8 +53,9 @@ export default function Player(props) {
     }
     setVideo(video);
 
-    setPlaying(true);
-  }, [uuid, videos, setVideo, setPlaying,]);
+    setPlaying(autoplayRef.current);
+    autoplayRef.current = false; // don't autoplay next time video is
+  }, [uuid, videos, setVideo, setPlaying, autoplayRef,]);
 
   const saveProgress = useCallback((source) => {
     if (!video) {
@@ -208,21 +209,24 @@ export default function Player(props) {
       // save position on dismount
       saveProgress('dismount');
     };
-  }, [saveProgress]);
+  }, [saveProgress, loading,]);
 
   const onProgress = useCallback(() => {
     // save video position
     if (playerRef.current) {
       //console.log('onProgress', playerRef.current.getCurrentTime());
       const time = playerRef.current.getCurrentTime();
-      video.position = time;
+      if (time !== video.position) {
+        updateLastAction();
+        video.position = time;
+      }
     }
 
     // save to DB every 10s or on pause
     if (Date.now() - lastSaveRef.current >= 10000) {
       saveProgress('progress');
     }
-  }, [video, saveProgress,]);
+  }, [video, saveProgress, updateLastAction,]);
 
   const onReady = useCallback((event) => {
     console.log('onReady', event);
@@ -317,7 +321,7 @@ export default function Player(props) {
   };
 
   if (loading) {
-    return (<Loading />);
+    return (<Loading style={{paddingTop: '50px'}} />);
   }
 
   return (

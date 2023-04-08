@@ -11,4 +11,9 @@ export default createContext({
     addVideoUrl: (props, callback) => {},
     saveVideo: (video) => {},
     changeVideoOrder: (changeVideo, fromIndex, toIndex) => {},
+    removeVideo: (video) => {},
+    restoreVideo: (video) => {},
+    loading: false,
+    updateLastAction: () => {},
+    autoplayRef: {current: false},
 });

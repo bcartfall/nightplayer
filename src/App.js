@@ -44,6 +44,8 @@ export default function App(props) {
   const [snack, setSnack] = useState(null);
   const [dialog, setDialog] = useState({open: false});
   const dragRef = useRef(0);
+  const lastActionRef = useRef(0);
+  const autoplayRef = useRef(false);
 
   const saveSettings = useCallback(async (nSettings) => {
     setSettings(nSettings);
@@ -101,7 +103,7 @@ export default function App(props) {
 
     // save video to DB
     console.log('Storing video', video);
-    await Database.set('videos', video.uuid, video.toObject());
+    await video.save(Database);
     console.log('Done storing.');
 
     if (callback) {
@@ -114,7 +116,8 @@ export default function App(props) {
       const result = await Database.get('videos', '*');
       let cVideos = [];
       for (const obj of result) {
-        cVideos.push(new Video(obj));
+        const aVideo = new Video(obj);
+        cVideos.push(aVideo);
       }
   
       console.log('Loading videos from DB.', cVideos);
@@ -127,8 +130,7 @@ export default function App(props) {
   };
 
   const saveVideo = useCallback(async (video, callback) => {
-    console.log('Saving video', video);
-    await Database.set('videos', video.uuid, video.toObject());
+    await video.save(Database);
 
     if (callback) {
       callback(video);
@@ -182,7 +184,7 @@ export default function App(props) {
     if (toIndex === fromIndex) {
       return; // no change
     }
-    console.log(fromIndex, toIndex);
+    //console.log(fromIndex, toIndex);
     nVideos[toIndex] = changeVideo;
 
     // fill in positions
@@ -200,6 +202,7 @@ export default function App(props) {
 
     // save
     for (let order in nVideos) {
+      order = parseInt(order, 10);
       const video = nVideos[order];
       if (video.order !== order) {
         video.order = order;
@@ -268,12 +271,43 @@ export default function App(props) {
     setDialog({...dialog, open: false})
   }, [dialog, setDialog, dragRef, addVideoUrl,]);
 
+  const updateLastAction = useCallback(async() => {
+    const now = Date.now();
+    if (lastActionRef.current > 0) {
+      const elapsed = now - lastActionRef.current;
+      lastActionRef.current = now;
+      if (elapsed > 600000) { // 10 minutes
+        autoplayRef.current = false;
+        setLoading(true);
+        console.log('App has been inactive for more than 10 minutes. Reloading video data.');
+        await loadVideos();
+        setLoading(false);
+      }
+    } else {
+      lastActionRef.current = now;
+    }
+
+  }, [lastActionRef, setLoading, autoplayRef,]);
+
+
+  const onMouseMove = useCallback(() => {
+    updateLastAction();
+  }, [updateLastAction,]);
+
+  const onKeyUp = useCallback(() => {
+    updateLastAction();
+  }, [updateLastAction,]);
+
+  const onClick = useCallback(() => {
+    updateLastAction();
+  }, [updateLastAction,]);
+
   return (
     <ThemeProvider theme={darkTheme}>
       <LayoutContext.Provider value={{ title, setTitle, error, snack, setSnack, }}>
-        <VideosContext.Provider value={{ videos, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, loading, }}>
+        <VideosContext.Provider value={{ videos, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, loading, updateLastAction, autoplayRef, }}>
           <CssBaseline />
-          <div className="app" onDrop={onDrop} onDragEnter={onDragEnter} onDragOver={(e) => e.preventDefault()} onDragLeave={onDragLeave}>
+          <div className="app" onDrop={onDrop} onDragEnter={onDragEnter} onDragOver={(e) => e.preventDefault()} onDragLeave={onDragLeave} onMouseMove={onMouseMove} onKeyUp={onKeyUp} onClick={onClick}>
             <HashRouter>
               <Routes>
                 <Route path="/" element={<Layout />}>

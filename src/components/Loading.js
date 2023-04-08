@@ -9,9 +9,9 @@ import { Typography, CircularProgress, } from '@mui/material';
 
 export default function Loading(props) {
   return (
-    <>
+    <div style={props?.style}>
       <CircularProgress />
       <Typography sx={{mt: 2}}>Loading...</Typography>
-    </>
+    </div>
   );
 };

@@ -4,16 +4,19 @@
  * See README.md
  */
 
-import React, { useState, useCallback, } from 'react';
+import React, { useState, useCallback, useContext, } from 'react';
 import { useNavigate } from "react-router-dom";
 
 import { Card, Box, CardContent, CardMedia, Typography, LinearProgress, Grow } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import VideoContextMenu from './VideoContextMenu';
 
+import VideosContext from '../contexts/VideosContext';
+
 export default function VideoListItem({ video, active, index, }) {
   const [contextMenu, setContextMenu] = useState(null);
   const navigate = useNavigate();
+  const { autoplayRef, } = useContext(VideosContext);
 
   const handleContextMenu = (event) => {
     event.preventDefault();
@@ -35,8 +38,9 @@ export default function VideoListItem({ video, active, index, }) {
   };
 
   const navigateToVideo = useCallback(() => {
+    autoplayRef.current= true;
     navigate('/player/' + video.uuid);
-  }, [video, navigate]);
+  }, [video, navigate, autoplayRef,]);
 
   let numberElement;
   if (active) {
