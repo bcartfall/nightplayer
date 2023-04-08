@@ -71,7 +71,8 @@ export default function Layout(props) {
     setShowAddVideo(false);
   }, [setShowAddVideo]);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
     setShowGettingVideo(true);
 
     addVideoUrl({url: addUrl, controls: !hideControls}, () => {
@@ -125,29 +126,31 @@ export default function Layout(props) {
       )}
       <Outlet />
       <Dialog open={showAddVideo} onClose={handleClose}>
-        <DialogTitle>Add Video</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Enter in YouTube URL or Twitch URL to add video to playlist.
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="url"
-            label="Video URL"
-            type="url"
-            fullWidth
-            variant="standard"
-            onChange={handleChange}
-          />
-          <FormGroup>
-            <FormControlLabel control={<Checkbox onChange={(e) => {setHideControls(e.target.checked)}} />} label="Hide Controls and Progress" />
-          </FormGroup>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit}>Add Video</Button>
-        </DialogActions>
+        <form onSubmit={handleSubmit}>
+          <DialogTitle>Add Video</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Enter in YouTube URL or Twitch URL to add video to playlist.
+            </DialogContentText>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="url"
+              label="Video URL"
+              type="url"
+              fullWidth
+              variant="standard"
+              onChange={handleChange}
+            />
+            <FormGroup>
+              <FormControlLabel control={<Checkbox onChange={(e) => {setHideControls(e.target.checked)}} />} label="Hide Controls and Progress" />
+            </FormGroup>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose}>Cancel</Button>
+            <Button onClick={handleSubmit}>Add Video</Button>
+          </DialogActions>
+        </form>
       </Dialog>
       <Snackbar
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
