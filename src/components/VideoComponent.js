@@ -6,7 +6,7 @@
 
 import React, { useContext, useState, } from 'react';
 
-import { Card, Box, CardContent, CardMedia, Typography, LinearProgress, Grow } from '@mui/material';
+import { Card, Box, CardMedia, Typography, LinearProgress, Grow, } from '@mui/material';
 import { useNavigate } from "react-router-dom";
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import VideoContextMenu from './VideoContextMenu';
@@ -78,38 +78,27 @@ export default function VideoComponent({ video, index, dragIndex, dragDirection,
     >
       <div onClick={playVideo}>
         <Grow key={video.uuid} in={true}>
-          <Card sx={{ display: 'flex', mb: 2 }} className="video-component">
-            <Box sx={{ position: 'relative', width: '30%', display: 'inherited', flexDirection: 'column' }}>
+          <Box className="video-card" sx={{borderRadius: '15px', overflow: 'hidden', backgroundColor: '#000', }}>
+            <Card sx={{position: 'relative'}}>
               <Box className="cover">
                 <Box className="center">
                   <PlayArrowIcon fontSize="large" />
                 </Box>
               </Box>
               <CardMedia
+              sx={{ aspectRatio: '16 /9', objectFit: 'cover', overflow: 'hidden', }}
                 component="img"
-                image={video.getThumbnailUrl(320, 240)}
+                image={video.getThumbnailUrl(480, 270)}
                 alt={video.title}
               />
               <Box sx={{ position: 'absolute', right: 8, bottom: 8, fontSize: '0.8rem', borderRadius: 2, backgroundColor: 'black', p: 0.25, pl: 0.75, pr: 0.75 }}>{duration}</Box>
-            </Box>
-            <Box sx={{ width: '70%', display: 'flex', flexDirection: 'column' }} className="content">
-              <CardContent sx={{ flex: '1 0 auto' }}>
-                <Typography component="div" className="title" variant="h6">
-                  {video.title}
-                </Typography>
-                <Typography component="div" sx={{color: '#aaa'}}>
-                  {video.url}
-                </Typography>
-              </CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', pl: 1, pb: 1 }}>
-                <Typography className="description" sx={{ overflow: 'hidden', maxHeight: 76, color: '#aaa' }}>
-                  {video.description}
-                </Typography>
-              </Box>
-              {progress > 0 &&
-                <LinearProgress className="videoPlayerProgress" color={color} variant="determinate" value={progress} />}
-            </Box>
-          </Card>
+            </Card>
+            <Typography sx={{m: 2, textOverflow: 'ellipsis', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden',}}>{video.title}</Typography>
+            {progress > 0 &&
+              <LinearProgress className="videoPlayerProgress" color={color} variant="determinate" value={progress} />}
+            {progress <= 0 &&
+              <LinearProgress className="videoPlayerProgress" color="none" variant="determinate" value={100} />}
+          </Box>
         </Grow>
       </div>
       <VideoContextMenu video={video} contextMenu={contextMenu} onClose={handleContextClose} />

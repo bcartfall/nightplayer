@@ -5,7 +5,7 @@
  */
 
 import React, { useCallback, useContext, useEffect, useState, } from 'react';
-import { Alert, } from '@mui/material';
+import { Alert, Grid, } from '@mui/material';
 
 import VideoComponent from '../components/VideoComponent';
 import Loading from '../components/Loading';
@@ -101,9 +101,15 @@ export default function Main(props) {
               No videos found. Drag and drop video URLs or use the add video button to add videos.
             </Alert>
           )}
-          {videos.map((item, index) => {
-            return (<VideoComponent key={`video-${item.uuid}`} index={index} dragIndex={dragIndex?.index} dragDirection={dragIndex?.direction} video={item} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragEnter={onDragEnter} onDragLeave={onDragLeave} />);
-          })}
+          <Grid container spacing={2}>
+            {videos.map((item, index) => {
+              return (
+                <Grid item sm={4}>
+                  <VideoComponent key={`video-${item.uuid}`} index={index} dragIndex={dragIndex?.index} dragDirection={dragIndex?.direction} video={item} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragEnter={onDragEnter} onDragLeave={onDragLeave} />
+                </Grid>
+              );
+            })}
+          </Grid>
         </>
       )}
     </div>

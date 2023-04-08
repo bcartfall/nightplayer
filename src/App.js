@@ -31,6 +31,9 @@ import Video from './models/Video';
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
+    none: {
+      main: '#444444',
+    },
   },
 });
 

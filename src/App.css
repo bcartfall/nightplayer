@@ -16,8 +16,8 @@ a {
 .page {
   margin: auto auto;
   min-width: 800px;
-  max-width: 800px;
-  padding: 15px 0;
+  max-width: 1200px;
+  padding: 30px 30px;
 }
 
 .link {
@@ -57,7 +57,7 @@ a {
   color: #aaa;
 }
 
-.video-component .cover {
+.video-component .cover, .video-card .cover {
   position: absolute;
   left: 0;
   top: 0;
@@ -68,7 +68,7 @@ a {
   transition: opacity 100ms ease-in-out;
 }
 
-.video-component .cover .center {
+.video-component .cover .center, .video-card .cover .center {
   margin: 0 auto;
   position: absolute;
   top: 50%;
@@ -84,7 +84,7 @@ a {
   transition: background 100ms ease-in-out;
 }
 
-.video-component {
+.video-component, .video-card {
   cursor: pointer;
 }
 
@@ -92,7 +92,7 @@ a {
   background-color: #2e2e2e;
 }
 
-.video-component:hover .cover {
+.video-component:hover .cover, .video-card:hover .cover {
   opacity: 1;
 }
 
@@ -123,18 +123,26 @@ a {
   transition: none;
 }
 
+.video-drag-target {
+  position: relative;
+}
+
 .video-drag-target.drag-active-up:before {
-  display: block;
   content: '';
-  background: silver;
-  height: 10px;
-  margin-bottom: 15px;
+  display: block;
+  border-left: silver dashed 5px;
+  height: 100%;
+  left: -10px;
+  top: 0;
+  position: absolute;
 }
 
 .video-drag-target.drag-active-down:after {
-  display: block;
   content: '';
-  background: silver;
-  height: 10px;
-  margin-top: 15px;
+  display: block;
+  border-left: silver dashed 5px;
+  height: 100%;
+  right: -10px;
+  top: 0;
+  position: absolute;
 }
