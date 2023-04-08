@@ -5,7 +5,8 @@
  */
 
 import React, { useCallback, useContext, useEffect } from 'react';
-import { Typography, CircularProgress, Grow, Grid, FormControl, InputLabel, Select, MenuItem, TextField, FormGroup, } from '@mui/material';
+import { Typography, CircularProgress, Grow, Grid, FormControl, InputLabel, Select, MenuItem, TextField, FormGroup, Divider,} from '@mui/material';
+import packageInfo from '../../package.json';
 
 import LayoutContext from '../contexts/LayoutContext';
 
@@ -122,7 +123,8 @@ export default function Settings({ settings, saveSettings, }) {
             </Grid>
           </Grid>
         </FormGroup>
-        <FormGroup sx={{mt: 5}}>
+        <Divider sx={{ m: 4 }} />
+        <FormGroup>
           <Typography variant="h4" sx={{mb: 1}}>
             Application Settings
           </Typography>
@@ -139,36 +141,41 @@ export default function Settings({ settings, saveSettings, }) {
           </Grid>
         </FormGroup>
         {settings.databaseDriver === 'firebase' && (
-          <FormGroup sx={{mt: 5}}>
-            <Typography variant="h4" sx={{mb: 1}}>
-              Firebase Settings
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Typography sx={{mb: 2}}>Paste the Firebase config variable from the Firebase app setup page.</Typography>
-                <TextField label="Firebase Configuration JSON." multiline rows={6} fullWidth onChange={onFirebaseConfig} />
+          <>
+            <Divider sx={{ m: 4 }} />
+            <FormGroup>
+              <Typography variant="h4" sx={{mb: 1}}>
+                Firebase Settings
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Typography sx={{mb: 2}}>Paste the Firebase config variable from the Firebase app setup page.</Typography>
+                  <TextField label="Firebase Configuration JSON." multiline rows={6} fullWidth onChange={onFirebaseConfig} />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField fullWidth required label="Firebase API Key" type="password" value={settings.firebase.apiKey || ''} onFocus={e => {e.target.select()}} onChange={(e) => {onChange('firebase.apiKey', e.target.value)}} />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField fullWidth required label="Firebase Auth Domain" type="text" value={settings.firebase.authDomain || ''} onFocus={e => {e.target.select()}} onChange={(e) => {onChange('firebase.authDomain', e.target.value)}} />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField fullWidth required label="Firebase Project Id" type="text" value={settings.firebase.projectId || ''} onFocus={e => {e.target.select()}} onChange={(e) => {onChange('firebase.projectId', e.target.value)}} />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField fullWidth required label="Firebase Storage Bucket" type="text" value={settings.firebase.storageBucket || ''} onFocus={e => {e.target.select()}} onChange={(e) => {onChange('firebase.storageBucket', e.target.value)}} />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField fullWidth required label="Firebase Messaging Sender Id" type="text" value={settings.firebase.messagingSenderId || ''} onFocus={e => {e.target.select()}} onChange={(e) => {onChange('firebase.messagingSenderId', e.target.value)}} />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField fullWidth required label="Firebase App Id" type="text" value={settings.firebase.appId || ''} onFocus={e => {e.target.select()}} onChange={(e) => {onChange('firebase.appId', e.target.value)}} />
+                </Grid>
               </Grid>
-              <Grid item xs={6}>
-                <TextField fullWidth required label="Firebase API Key" type="password" value={settings.firebase.apiKey || ''} onFocus={e => {e.target.select()}} onChange={(e) => {onChange('firebase.apiKey', e.target.value)}} />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField fullWidth required label="Firebase Auth Domain" type="text" value={settings.firebase.authDomain || ''} onFocus={e => {e.target.select()}} onChange={(e) => {onChange('firebase.authDomain', e.target.value)}} />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField fullWidth required label="Firebase Project Id" type="text" value={settings.firebase.projectId || ''} onFocus={e => {e.target.select()}} onChange={(e) => {onChange('firebase.projectId', e.target.value)}} />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField fullWidth required label="Firebase Storage Bucket" type="text" value={settings.firebase.storageBucket || ''} onFocus={e => {e.target.select()}} onChange={(e) => {onChange('firebase.storageBucket', e.target.value)}} />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField fullWidth required label="Firebase Messaging Sender Id" type="text" value={settings.firebase.messagingSenderId || ''} onFocus={e => {e.target.select()}} onChange={(e) => {onChange('firebase.messagingSenderId', e.target.value)}} />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField fullWidth required label="Firebase App Id" type="text" value={settings.firebase.appId || ''} onFocus={e => {e.target.select()}} onChange={(e) => {onChange('firebase.appId', e.target.value)}} />
-              </Grid>
-            </Grid>
-          </FormGroup>
+            </FormGroup>
+          </>
         )}
+        <Divider sx={{ m: 4 }} />
+        <Typography>Night Player v{packageInfo.version}</Typography>
       </div>
     </Grow>
   );
