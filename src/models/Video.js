@@ -4,6 +4,7 @@
  * See README.md
  */
 
+import { getDatabase } from '../database/Database';
 import TwitchAPI from '../models/TwitchAPI';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -92,12 +93,12 @@ class Video {
         }
     }
 
-    async save(Database) {
+    async save() {
         const obj = this.toObject();
         if (JSON.stringify(obj) !== JSON.stringify(this._originalAttributes)) {
             console.log('Saving video', this);
             this._originalAttributes = obj;
-            await Database.set('videos', this.uuid, obj);
+            await getDatabase().put('videos', this.uuid, obj);
         } else {
             console.log('Not saving video because not changes', this);
         }

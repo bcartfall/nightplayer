@@ -24,7 +24,7 @@ import Settings from './pages/Settings';
 import Player from './pages/Player';
 import LayoutContext from './contexts/LayoutContext';
 import VideosContext from './contexts/VideosContext';
-import Database from './models/Database';
+import { setDatabase, getDatabase, } from './database/Database';
 import TwitchAPI from './models/TwitchAPI';
 import Video from './models/Video';
 
@@ -57,7 +57,7 @@ export default function App(props) {
     if (nSettings.databaseDriver !== settings.databaseDriver || JSON.stringify(nSettings.firebase) !== JSON.stringify(settings.firebase)) {
       shouldLoadVideos.current = true;
       try {
-        await Database.setDriver(nSettings.databaseDriver, nSettings);
+        await setDatabase(nSettings.databaseDriver, nSettings);
       } catch (e) {
         setError(e.toString());
       }
@@ -106,7 +106,7 @@ export default function App(props) {
 
     // save video to DB
     console.log('Storing video', video);
-    await video.save(Database);
+    await video.save();
     console.log('Done storing.');
 
     if (callback) {
@@ -116,7 +116,7 @@ export default function App(props) {
 
   const loadVideos = async () => {
     try {
-      const result = await Database.get('videos', '*');
+      const result = await getDatabase().get('videos', '*');
       let cVideos = [];
       for (const obj of result) {
         const aVideo = new Video(obj);
@@ -133,7 +133,7 @@ export default function App(props) {
   };
 
   const saveVideo = useCallback(async (video, callback) => {
-    await video.save(Database);
+    await video.save();
 
     if (callback) {
       callback(video);
@@ -167,7 +167,7 @@ export default function App(props) {
       setSettings(localSettings);
 
       try {
-        await Database.setDriver(localSettings.databaseDriver ?? 'local', localSettings);
+        await setDatabase(localSettings.databaseDriver ?? 'local', localSettings);
       } catch (e) {
         setError(e.toString());
       }
@@ -224,7 +224,7 @@ export default function App(props) {
     });
     console.log(nVideos);
     setVideos(nVideos);
-    await Database.delete('videos', video.uuid);
+    await getDatabase().delete('videos', video.uuid);
   }, [videos, setVideos]);
 
   const restoreVideo = useCallback(async (video) => {
