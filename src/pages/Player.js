@@ -34,6 +34,7 @@ export default function Player(props) {
   let { uuid } = useParams(); // get id from url (e.g. /player/:uuid)
 
   const [video, setVideo] = useState(null);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     // change title
@@ -52,10 +53,15 @@ export default function Player(props) {
       }
     }
     setVideo(video);
+    if (!video) {
+      setNotFound(true);
+    } else {
+      console.log(false);
+    }
 
     setPlaying(autoplayRef.current);
     autoplayRef.current = false; // don't autoplay next time video is
-  }, [uuid, videos, setVideo, setPlaying, autoplayRef,]);
+  }, [uuid, videos, setVideo, setPlaying, autoplayRef, setNotFound,]);
 
   const saveProgress = useCallback((source) => {
     if (!video) {
@@ -321,7 +327,7 @@ export default function Player(props) {
     setContextMenu(null);
   };
 
-  if (loading) {
+  if (loading || (!video && !notFound)) {
     return (<Loading style={{paddingTop: '50px'}} />);
   }
 
@@ -398,7 +404,7 @@ export default function Player(props) {
             <PlayerContextMenu contextMenu={contextMenu} onClose={handleContextClose} />
           </>
         )}
-        {!video && (
+        {notFound && (
           <Alert severity="warning">
             Video {uuid} not found.
           </Alert>
