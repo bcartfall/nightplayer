@@ -104,6 +104,13 @@ class Video {
         }
     }
 
+    equals(video) {
+        if (!video) {
+            return false;
+        }
+        return JSON.stringify(this.toObject()) === JSON.stringify(video.toObject());
+    }
+
     getUrlAtTime() {
         if (this.source === "twitch") {
             const p = Math.floor(this.position);

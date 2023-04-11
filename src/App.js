@@ -50,6 +50,41 @@ export default function App(props) {
   const lastActionRef = useRef(0);
   const autoplayRef = useRef(false);
 
+  const loadVideos = useCallback(async () => {
+    try {
+      const result = await getDatabase().get('videos', '*');
+      let cVideos = [];
+      for (const i in result) {
+        const aVideo = new Video(result[i]);
+        cVideos.push(aVideo);
+      }
+
+      // save number of videos so we can show placeholder
+      localStorage.setItem('number_of_videos', cVideos.length);
+  
+      let diff = false;
+      if (videos && cVideos && cVideos.length !== videos.length) {
+        diff = true;
+      } else {
+        for (let i in cVideos) {
+          if (!cVideos[i].equals(videos[i])) {
+            diff = true;
+            break;
+          }
+        }
+      }
+
+      if (diff) {
+        return cVideos;
+      }
+    } catch (e) {
+      console.error(e);
+      setError(e.toString());
+    }
+
+    return null;
+  }, [videos, setError,]);
+
   const saveSettings = useCallback(async (nSettings) => {
     setSettings(nSettings);
 
@@ -57,6 +92,7 @@ export default function App(props) {
     if (nSettings.databaseDriver !== settings.databaseDriver || JSON.stringify(nSettings.firebase) !== JSON.stringify(settings.firebase)) {
       shouldLoadVideos.current = true;
       try {
+        console.log('changing database driver.');
         await setDatabase(nSettings.databaseDriver, nSettings);
       } catch (e) {
         setError(e.toString());
@@ -66,7 +102,10 @@ export default function App(props) {
     if (shouldLoadVideos.current) {
       // keep trying to load videos until we don't get an error any more
       try {
-        await loadVideos();
+        const nVideos = await loadVideos();
+        if (nVideos) {
+          setVideos(nVideos);
+        }
         setError(null);
         shouldLoadVideos.current = false;
       } catch (e) {
@@ -76,7 +115,7 @@ export default function App(props) {
     }
     localStorage.setItem('settings', JSON.stringify(nSettings));
     TwitchAPI.setClient(nSettings.twitch);
-  }, [settings, setSettings, setError]);
+  }, [settings, setSettings, setError, loadVideos, setVideos,]);
 
   const addVideoUrl = useCallback(async ({url, controls}, callback) => {
     // add video by url
@@ -112,25 +151,10 @@ export default function App(props) {
     if (callback) {
       callback(video);
     }
+
+    // save number of videos so we can show placeholder
+    localStorage.setItem('number_of_videos', nVideos.length);
   }, [videos, setVideos, settings]);
-
-  const loadVideos = async () => {
-    try {
-      const result = await getDatabase().get('videos', '*');
-      let cVideos = [];
-      for (const obj of result) {
-        const aVideo = new Video(obj);
-        cVideos.push(aVideo);
-      }
-  
-      console.log('Loading videos from DB.', cVideos);
-      setVideos(cVideos);
-
-    } catch (e) {
-      console.error(e);
-      setError(e.toString());
-    }
-  };
 
   const saveVideo = useCallback(async (video, callback) => {
     await video.save();
@@ -141,6 +165,7 @@ export default function App(props) {
   }, []);
 
   useEffect(() => {
+    console.log('mounting app');
     // loading data
     const fetchDB = async () => {
       let localSettings = JSON.parse(localStorage.getItem('settings'));
@@ -173,13 +198,16 @@ export default function App(props) {
       }
       TwitchAPI.setClient(localSettings.twitch);
 
-      // deserliaze list of videos
-      await loadVideos();
-      
+      // load list of videos
+      const nVideos = await loadVideos();
+      if (nVideos) {
+        setVideos(nVideos);
+      }
       setLoading(false);
     };
     fetchDB();
-  }, [setVideos, setLoading, setSettings, ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const changeVideoOrder = useCallback((changeVideo, fromIndex, toIndex) => {
     let nVideos = [...videos];
@@ -281,16 +309,16 @@ export default function App(props) {
       lastActionRef.current = now;
       if (elapsed > 600000) { // 10 minutes
         autoplayRef.current = false;
-        setLoading(true);
         console.log('App has been inactive for more than 10 minutes. Reloading video data.');
-        await loadVideos();
-        setLoading(false);
+        const nVideos = await loadVideos();
+        if (nVideos) {
+          setVideos(nVideos);
+        }
       }
     } else {
       lastActionRef.current = now;
     }
-
-  }, [lastActionRef, setLoading, autoplayRef,]);
+  }, [lastActionRef, autoplayRef, loadVideos, setVideos,]);
 
 
   const onMouseMove = useCallback(() => {

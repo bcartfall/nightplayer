@@ -96,13 +96,13 @@ export default function Main(props) {
       )}
       {!loading && (
         <>
-          {videos.length === 0 && (
+          {videos?.length === 0 && (
             <Alert severity="warning">
               No videos found. Drag and drop video URLs or use the add video button to add videos.
             </Alert>
           )}
           <Grid container spacing={2}>
-            {videos.map((item, index) => {
+            {videos?.map((item, index) => {
               return (
                 <Grid item sm={4} key={`video-grid-${item.uuid}`}>
                   <VideoComponent key={`video-${item.uuid}`} index={index} dragIndex={dragIndex?.index} dragDirection={dragIndex?.direction} video={item} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragEnter={onDragEnter} onDragLeave={onDragLeave} />

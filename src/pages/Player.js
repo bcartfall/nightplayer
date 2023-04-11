@@ -55,8 +55,6 @@ export default function Player(props) {
     setVideo(video);
     if (!video) {
       setNotFound(true);
-    } else {
-      console.log(false);
     }
 
     setPlaying(autoplayRef.current);

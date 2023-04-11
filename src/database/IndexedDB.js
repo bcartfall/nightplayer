@@ -41,8 +41,8 @@ export default class IndexedDB extends IDatabase {
     }
 
     async get(table, key, options = {}) {
-        const where = options.where ?? [],
-            order = options.orderBy ?? ['order', 'asc'];
+        //const where = options.where ?? [];
+        const order = options.orderBy ?? ['order', 'asc'];
 
         if (key === '*') {
             // get all
