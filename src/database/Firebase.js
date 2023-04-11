@@ -31,8 +31,8 @@ class Firebase extends IDatabase {
     }
 
     async get(table, key, options = {}) {
-        const where = options.where ?? [],
-            order = options.orderBy ?? ['order', 'asc'];
+        //const where = options.where ?? [];
+        const order = options.orderBy ?? ['order', 'asc'];
 
         // options = {where: [{index, equals}], orderBy: [key,'asc]}
         if (!this.isFirebaseConfigured()) {
