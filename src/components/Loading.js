@@ -5,13 +5,35 @@
  */
 
 import React from 'react';
-import { Typography, CircularProgress, } from '@mui/material';
+import { Typography, CircularProgress, Grid } from '@mui/material';
+import PlaceholderVideoComponent from './PlaceholderVideoComponent';
 
-export default function Loading(props) {
-  return (
-    <div style={props?.style}>
-      <CircularProgress />
-      <Typography sx={{mt: 2}}>Loading...</Typography>
-    </div>
-  );
+export default function Loading({style, page}) {
+  if (page === 'main') {
+    // video component placeholders
+    const number_of_videos = localStorage.getItem('number_of_videos') || 6;
+    
+    let elements = [];
+    for (let i=0; i<number_of_videos; i++) {
+      elements.push((
+        <Grid item sm={4} key={`video-grid-placeholder-${i}`}>
+          <PlaceholderVideoComponent key={`video-{$i}`} />
+        </Grid>
+      ));
+    }
+
+    return (
+      <Grid container spacing={2} sx={{ maxWidth: '1200px' }}>
+        { elements }
+      </Grid>
+    );
+  } else {
+    // circular progress
+    return (
+      <div style={style}>
+        <CircularProgress />
+        <Typography sx={{mt: 2}}>Loading...</Typography>
+      </div>
+    );
+  }
 };

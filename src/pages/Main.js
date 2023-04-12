@@ -87,12 +87,11 @@ export default function Main(props) {
 
     //console.log('onDragLeave', e);
   }, []);
-
   
   return (
     <div className="page">
       {loading && (
-        <Loading />
+        <Loading page="main" />
       )}
       {!loading && (
         <>
