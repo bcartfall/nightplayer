@@ -11,4 +11,5 @@ export default createContext({
     playing: false,
     setPlaying: () => {},
     showJumpToTime: () => {},
+    showLog: () => {},
 });

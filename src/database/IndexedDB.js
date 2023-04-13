@@ -5,60 +5,61 @@
  */
 
 import IDatabase from './IDatabase';
-
-import { openDB } from 'idb';
+import Dexie from 'dexie';
 
 export default class IndexedDB extends IDatabase {
     async init(settings) {
         this._settings = settings;
 
         // init indexeddb
-        this._db = await openDB('nightplayer', 2, {
-            upgrade(db, oldVersion, newVersion) {
-                console.log(oldVersion, newVersion);
-                if (oldVersion < 1) {
-                    // v1
-                    // Create a store of objects
-                    const videos = db.createObjectStore('videos', {
-                        keyPath: 'uuid',
-                        autoIncrement: false,
-                    });
-                    // indices
-                    videos.createIndex('order', 'order');
-                }
-
-                if (oldVersion < 2) {
-                    // v2
-                    const logs = db.createObjectStore('logs', {
-                        keyPath: 'uuid',
-                        autoIncrement: false,
-                    });
-                    logs.createIndex('video_id', 'video_id');
-                    logs.createIndex('created_at', 'created_at');
-                }
-            },
+        this._db = new Dexie('nightplayer');
+        this._db.version(3).stores({
+            videos: 'uuid, order', // Primary key and indexed props
+            logs: 'uuid, video_id, created_at',
         });
     }
 
     async get(table, key, options = {}) {
-        //const where = options.where ?? [];
-        const order = options.orderBy ?? ['order', 'asc'];
+        const where = options.where ?? [];
+        const orderBy = options.orderBy ?? [['order', 'asc']];
 
         if (key === '*') {
-            // get all
-            return await this._db.getAllFromIndex(table, order[0]); // get all from table ordered by 'order' 
+            if (where.length > 0) {
+                // where = [[key, '=', value]]
+                //console.log(where[0][0], where[0][2]);
+                let query = this._db[table].where(where[0][0]).equals(where[0][2]);
+                if (orderBy[0][1] === 'desc') {
+                    query = query.reverse();
+                }
+                query = query.sortBy(orderBy[0][0]);
+                return await query;
+            } else {
+                // get all
+                return await this._db[table].orderBy(orderBy[0][0]).toArray();
+            }
         } else {
             // get one
-            return await this._db.get(table, key);
+            return await this._db[table].get(key);
         }
     }
 
     async put(table, key, value) {
-        await this._db.put(table, value);
-        return value;
+        await this._db[table].put(value);
     }
 
-    async delete(table, key) {
-        await this._db.delete(table, key);
+    async delete(table, key, options = {}) {
+        const where = options.where ?? [];
+
+        if (key === '*') {
+            if (where.length > 0) {
+                this._db[table].where(where[0][0]).equals(where[0][2]).delete();
+            } else {
+                // delete all
+                throw new Error('Delete all (*) not implemented yet.');
+            }
+        } else {
+            // delete one
+            await this._db[table].delete(key);
+        }
     }
 };

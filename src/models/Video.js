@@ -104,6 +104,17 @@ class Video {
         }
     }
 
+    async log(action, data = {}) {
+        const obj = {
+            uuid: uuidv4(),
+            video_id: this.uuid,
+            action,
+            data,
+            created_at: new Date(),
+        };
+        await getDatabase().put('logs', obj.uuid, obj);
+    }
+
     equals(video) {
         if (!video) {
             return false;

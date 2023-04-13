@@ -10,6 +10,7 @@ import { Menu, MenuItem, ListItemIcon, ListItemText, Divider, } from '@mui/mater
 import LinkIcon from '@mui/icons-material/Link';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import MoreTimeIcon from '@mui/icons-material/MoreTime';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 import VideosContext from '../contexts/VideosContext';
 import LayoutContext from '../contexts/LayoutContext';
@@ -18,7 +19,7 @@ import PlayerContext from '../contexts/PlayerContext';
 export default function PlayerContextMenu({ contextMenu, onClose }) {
   const { saveVideo, } = useContext(VideosContext);
   const { setSnack } = useContext(LayoutContext);
-  const { video, playing, setPlaying, showJumpToTime, } = useContext(PlayerContext);
+  const { video, playing, setPlaying, showJumpToTime, showLog, } = useContext(PlayerContext);
 
   const onToggleControls = useCallback(() => {
     onClose();
@@ -73,6 +74,11 @@ export default function PlayerContextMenu({ contextMenu, onClose }) {
     onClose();
   }, [onClose, showJumpToTime,]);
 
+  const onShowLog = useCallback(() => {
+    showLog();
+    onClose();
+  }, [onClose, showLog,]);
+
   return (
     <>
       <Menu open={contextMenu !== null} onClose={onClose} anchorReference="anchorPosition" anchorPosition={contextMenu !== null ? {top: contextMenu.mouseY, left: contextMenu.mouseX} : undefined}>
@@ -87,6 +93,12 @@ export default function PlayerContextMenu({ contextMenu, onClose }) {
             <MoreTimeIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Jump to Time</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={onShowLog}>
+          <ListItemIcon>
+            <AccessTimeIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Show Log</ListItemText>
         </MenuItem>
         <Divider />
         <MenuItem onClick={onToggleControls}>

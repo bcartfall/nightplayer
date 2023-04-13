@@ -21,7 +21,7 @@ export default class IDatabase {
         throw new Error('Not implemented.');
     }
 
-    async delete(table, key) {
+    async delete(table, key, options = {}) {
         throw new Error('Not implemented.');
     }
 };

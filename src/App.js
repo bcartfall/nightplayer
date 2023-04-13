@@ -53,6 +53,7 @@ export default function App(props) {
   const loadVideos = useCallback(async () => {
     try {
       const result = await getDatabase().get('videos', '*');
+      console.log('loadVideos', result);
       let cVideos = [];
       for (const i in result) {
         const aVideo = new Video(result[i]);
@@ -154,6 +155,9 @@ export default function App(props) {
 
     // save number of videos so we can show placeholder
     localStorage.setItem('number_of_videos', nVideos.length);
+
+    // add to log
+    await video.log('create', {url,});
   }, [videos, setVideos, settings]);
 
   const saveVideo = useCallback(async (video, callback) => {
@@ -252,6 +256,7 @@ export default function App(props) {
     });
     console.log(nVideos);
     setVideos(nVideos);
+    await getDatabase().delete('logs', '*', {where: [['video_id', '=', video.uuid]]});
     await getDatabase().delete('videos', video.uuid);
   }, [videos, setVideos]);
 

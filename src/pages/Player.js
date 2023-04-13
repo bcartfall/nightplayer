@@ -16,6 +16,7 @@ import PlayerContext from '../contexts/PlayerContext';
 import PlayerContextMenu from '../components/PlayerContextMenu';
 import VideoList from '../components/VideoList';
 import Loading from '../components/Loading';
+import LogDialog from '../components/LogDialog';
 
 export default function Player(props) {
   const { setTitle, } = useContext(LayoutContext);
@@ -28,6 +29,7 @@ export default function Player(props) {
   const lastSaveRef = useRef(0);
   const [contextMenu, setContextMenu] = useState(null);
   const [jumpDialog, setJumpDialog] = useState({open: false});
+  const [showLogDialog, setShowLogDialog] = useState(false);
   const seekPosition = useRef(0);
 
   // get active video
@@ -47,6 +49,7 @@ export default function Player(props) {
     // set current video
     let video = null;
     for (const item of videos) {
+      //console.log(item.uuid, uuid, item.uuid === uuid);
       if (item.uuid === uuid) {
         video = item;
         break;
@@ -55,10 +58,12 @@ export default function Player(props) {
     setVideo(video);
     if (!video) {
       setNotFound(true);
+    } else {
+      setNotFound(false);
     }
 
     setPlaying(autoplayRef.current);
-    autoplayRef.current = false; // don't autoplay next time video is
+    autoplayRef.current = false; // don't autoplay next time video is loaded
   }, [uuid, videos, setVideo, setPlaying, autoplayRef, setNotFound,]);
 
   const saveProgress = useCallback((source) => {
@@ -68,7 +73,7 @@ export default function Player(props) {
     if (loading) {
       return;
     }
-    //console.log('Saving video', source);
+    console.log('Saving video', source);
     lastSaveRef.current = Date.now();
     saveVideo(video);
   }, [loading, video, saveVideo]);
@@ -252,12 +257,25 @@ export default function Player(props) {
     }
 
     lastSaveRef.current = Date.now();
-  }, [video, chooseBestQuality,]);
+  }, [video, chooseBestQuality, playerRef,]);
+
+  const onPlay = useCallback(() => {
+    if (playerRef.current) {
+      video.log('onPlay', {position: playerRef.current.getCurrentTime()});
+    }
+  }, [playerRef, video,]);
+
+  const onSeek = useCallback((seconds) => {
+    if (playerRef.current) {
+      video.log('onSeek', {position: seconds});
+    }
+  }, [playerRef, video,]);
 
   const onPause = useCallback(() => {
     if (playerRef.current) {
       video.position = playerRef.current.getCurrentTime();
       saveProgress('pause');
+      video.log('onPause', {position: video.position});
     }
   }, [saveProgress, video, playerRef,]);
 
@@ -291,6 +309,14 @@ export default function Player(props) {
       seconds: seconds,
     });
   }, [setJumpDialog, video]);
+
+  const showLog = useCallback(() => {
+    setShowLogDialog(true);
+  }, [setShowLogDialog]);
+
+  const hideLog = useCallback(() => {
+    setShowLogDialog(false);
+  }, [setShowLogDialog]);
 
   const onChangeJump = useCallback((e) => {
     const n = {...jumpDialog};
@@ -330,7 +356,7 @@ export default function Player(props) {
   }
 
   return (
-    <PlayerContext.Provider value={{ video, playing, setPlaying, showJumpToTime, }}>
+    <PlayerContext.Provider value={{ video, playing, setPlaying, showJumpToTime, showLog, }}>
       <div key={`player-page-${video ? video.uuid : 'none'}`} className="page page-video" onContextMenu={handleContextMenu}>
         {video && (
           <>
@@ -344,6 +370,8 @@ export default function Player(props) {
                       playing={playing}
                       controls={!!video.controls}
                       onReady={onReady}
+                      onPlay={onPlay}
+                      onSeek={onSeek}
                       onPause={onPause}
                       onProgress={onProgress}
                       progressInterval={1000}
@@ -399,6 +427,9 @@ export default function Player(props) {
                 </DialogActions>
               </form>
             </Dialog>
+            {showLogDialog && (
+              <LogDialog video={video} onClose={hideLog} />
+            )}
             <PlayerContextMenu contextMenu={contextMenu} onClose={handleContextClose} />
           </>
         )}
