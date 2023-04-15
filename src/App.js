@@ -258,6 +258,9 @@ export default function App(props) {
     setVideos(nVideos);
     await getDatabase().delete('logs', '*', {where: [['video_id', '=', video.uuid]]});
     await getDatabase().delete('videos', video.uuid);
+
+    // save number of videos so we can show placeholder
+    localStorage.setItem('number_of_videos', nVideos.length);
   }, [videos, setVideos]);
 
   const restoreVideo = useCallback(async (video) => {

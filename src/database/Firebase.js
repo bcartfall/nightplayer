@@ -88,7 +88,7 @@ class Firebase extends IDatabase {
         const whereOption = options.where ?? [];
 
         try {
-            if (where.length > 0) {
+            if (whereOption.length > 0) {
                 // firebase can't use where while deleting so fetch all of the data using a where command and then
                 // use a batch to delete all in one request
                 const ref = collection(this._db, table);

@@ -266,7 +266,7 @@ export default function Player(props) {
   }, [playerRef, video,]);
 
   const onSeek = useCallback((seconds) => {
-  }, [playerRef, video,]);
+  }, []);
 
   const onPause = useCallback(() => {
     if (playerRef.current) {
