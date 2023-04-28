@@ -93,14 +93,14 @@ class Video {
         }
     }
 
-    async save() {
+    async save(force = false) {
         const obj = this.toObject();
-        if (JSON.stringify(obj) !== JSON.stringify(this._originalAttributes)) {
+        if (force || JSON.stringify(obj) !== JSON.stringify(this._originalAttributes)) {
             console.log('Saving video', this);
             this._originalAttributes = obj;
             await getDatabase().put('videos', this.uuid, obj);
         } else {
-            console.log('Not saving video because not changes', this);
+            console.log('Not saving video because no changes', this);
         }
     }
 

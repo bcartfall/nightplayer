@@ -160,8 +160,8 @@ export default function App(props) {
     await video.log('create', {url,});
   }, [videos, setVideos, settings]);
 
-  const saveVideo = useCallback(async (video, callback) => {
-    await video.save();
+  const saveVideo = useCallback(async (video, callback = null, force = false) => {
+    await video.save(force);
 
     if (callback) {
       callback(video);
@@ -266,7 +266,7 @@ export default function App(props) {
   const restoreVideo = useCallback(async (video) => {
     console.log('Restoring video', video);
     // add video and sort by order
-    saveVideo(video); // save to DB
+    saveVideo(video, null, true); // save to DB
 
     // the state of the VideoContextMenu that was removed appears to have the video before it was removed
     // so if we call setVideos with this it seems to restore the removed video
