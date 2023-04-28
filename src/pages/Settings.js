@@ -105,7 +105,7 @@ export default function Settings({ settings, saveSettings, }) {
 
   return (
     <Grow in={true}>
-      <div className="page">
+      <div className="page page-800">
         <FormGroup>
           <Typography variant="h4" sx={{mb: 1}}>
             API Settings

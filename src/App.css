@@ -20,6 +20,11 @@ a {
   padding: 30px 30px;
 }
 
+.page-800 {
+  margin: auto auto;
+  max-width: 800px;
+}
+
 .link {
   text-decoration: none;
   color: inherit;
