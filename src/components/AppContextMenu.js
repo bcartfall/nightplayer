@@ -19,15 +19,6 @@ const isVideoUrl = (url) => {
 export default function AppContextMenu({ contextMenu, onClose }) {
   const { addVideoUrl, } = useContext(VideosContext);
   const { setSnack } = useContext(LayoutContext);
-  const [disablePaste, setDisablePaste] = useState(false);
-
-  useEffect(() => {
-    // see if url needs to be shown
-    navigator.clipboard.readText().then((clipText) => {
-      // validate is a video url
-      setDisablePaste(!isVideoUrl(clipText));
-    });
-  }, [ setDisablePaste, contextMenu, ]);
 
   const onPaste = useCallback(async () => {
     const clipText = await navigator.clipboard.readText();
@@ -54,7 +45,7 @@ export default function AppContextMenu({ contextMenu, onClose }) {
   return (
     <>
       <Menu open={contextMenu !== null} onClose={onClose} anchorReference="anchorPosition" anchorPosition={contextMenu !== null ? {top: contextMenu.mouseY, left: contextMenu.mouseX} : undefined}>
-        <MenuItem onClick={onPaste} disabled={disablePaste}>
+        <MenuItem onClick={onPaste}>
           <ListItemIcon>
             <ContentPasteIcon fontSize="small" />
           </ListItemIcon>
