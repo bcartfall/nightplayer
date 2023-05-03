@@ -87,6 +87,8 @@ export default function Main(props) {
 
     //console.log('onDragLeave', e);
   }, []);
+
+  
   
   return (
     <div className="page">
@@ -100,7 +102,7 @@ export default function Main(props) {
               No videos found. Drag and drop video URLs or use the add video button to add videos.
             </Alert>
           )}
-          <Grid container spacing={2}>
+          <Grid container spacing={2} id="main-grid">
             {videos?.map((item, index) => {
               return (
                 <Grid item sm={3} key={`video-grid-${item.uuid}`}>

@@ -27,6 +27,7 @@ import VideosContext from './contexts/VideosContext';
 import { setDatabase, getDatabase, } from './database/Database';
 import TwitchAPI from './models/TwitchAPI';
 import Video from './models/Video';
+import AppContextMenu from './components/AppContextMenu';
 
 const darkTheme = createTheme({
   palette: {
@@ -49,6 +50,7 @@ export default function App(props) {
   const dragRef = useRef(0);
   const lastActionRef = useRef(0);
   const autoplayRef = useRef(false);
+  const [contextMenu, setContextMenu] = useState(null);
 
   const loadVideos = useCallback(async () => {
     try {
@@ -341,12 +343,36 @@ export default function App(props) {
     updateLastAction();
   }, [updateLastAction,]);
 
+  const handleContextMenu = (event) => {
+    if (event.target.id !== 'main-grid' && event.target.id !== 'app') {
+      // show context menu on main grid and app background only
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenu(
+      contextMenu === null
+        ? {
+            mouseX: event.clientX + 2,
+            mouseY: event.clientY - 6,
+          }
+        : // repeated contextmenu when it is already open closes it with Chrome 84 on Ubuntu
+          // Other native context menus might behave different.
+          // With this behavior we prevent contextmenu from the backdrop to re-locale existing context menus.
+          null,
+    );
+  };
+
+  const handleContextClose = () => {
+    setContextMenu(null);
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
       <LayoutContext.Provider value={{ title, setTitle, error, snack, setSnack, }}>
         <VideosContext.Provider value={{ videos, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, loading, updateLastAction, autoplayRef, }}>
           <CssBaseline />
-          <div className="app" onDrop={onDrop} onDragEnter={onDragEnter} onDragOver={(e) => e.preventDefault()} onDragLeave={onDragLeave} onMouseMove={onMouseMove} onKeyUp={onKeyUp} onClick={onClick}>
+          <div className="app" id="app" onDrop={onDrop} onDragEnter={onDragEnter} onDragOver={(e) => e.preventDefault()} onDragLeave={onDragLeave} onMouseMove={onMouseMove} onKeyUp={onKeyUp} onClick={onClick} onContextMenu={handleContextMenu}>
             <HashRouter>
               <Routes>
                 <Route path="/" element={<Layout />}>
@@ -365,6 +391,7 @@ export default function App(props) {
                 </DialogContentText>
               </DialogContent>
             </Dialog>
+            <AppContextMenu contextMenu={contextMenu} onClose={handleContextClose} />
           </div>
         </VideosContext.Provider>
       </LayoutContext.Provider>
