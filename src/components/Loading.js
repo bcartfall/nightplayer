@@ -16,7 +16,7 @@ export default function Loading({style, page}) {
     let elements = [];
     for (let i=0; i<number_of_videos; i++) {
       elements.push((
-        <Grid item sm={4} key={`video-grid-placeholder-${i}`}>
+        <Grid item sm={3} key={`video-grid-placeholder-${i}`}>
           <PlaceholderVideoComponent key={`video-{$i}`} />
         </Grid>
       ));
