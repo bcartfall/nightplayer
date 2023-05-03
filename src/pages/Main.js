@@ -103,7 +103,7 @@ export default function Main(props) {
           <Grid container spacing={2}>
             {videos?.map((item, index) => {
               return (
-                <Grid item sm={4} key={`video-grid-${item.uuid}`}>
+                <Grid item sm={3} key={`video-grid-${item.uuid}`}>
                   <VideoComponent key={`video-${item.uuid}`} index={index} dragIndex={dragIndex?.index} dragDirection={dragIndex?.direction} video={item} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragEnter={onDragEnter} onDragLeave={onDragLeave} />
                 </Grid>
               );
