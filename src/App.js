@@ -40,7 +40,7 @@ const darkTheme = createTheme({
 
 export default function App(props) {
   const [loading, setLoading] = useState(true);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState('');
   const [videos, setVideos] = useState([]);
   const [settings, setSettings] = useState(null);
   const shouldLoadVideos = useRef(false);

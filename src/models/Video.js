@@ -22,7 +22,7 @@ function parseStringTime(s) {
     var seconds = (parseInt(match[2]) || 0);
 
     const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-    if (seconds === 0) {
+    if (hours === 0 && minutes === 0 && seconds === 0) {
         // might be just ?t=5000, in such a case return the number
         return parseInt(s, 10);
     }
