@@ -16,4 +16,5 @@ export default createContext({
     loading: false,
     updateLastAction: () => {},
     autoplayRef: {current: false},
+    addFolder: (parentId, name) => {},
 });

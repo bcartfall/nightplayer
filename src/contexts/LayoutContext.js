@@ -10,4 +10,9 @@ export default createContext({
     title: 'Night Player',
     setTitle: () => {},
     error: '',
+    setError: () => {},
+    addDialog: {},
+    setAddDialog: () => {},
+    folderDialog: {},
+    setFolderDialog: () => {},
 });

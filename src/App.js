@@ -40,17 +40,19 @@ const darkTheme = createTheme({
 
 export default function App(props) {
   const [loading, setLoading] = useState(true);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState('');
   const [videos, setVideos] = useState([]);
   const [settings, setSettings] = useState(null);
   const shouldLoadVideos = useRef(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState({open: false, message: ''});
   const [snack, setSnack] = useState(null);
   const [dialog, setDialog] = useState({open: false});
   const dragRef = useRef(0);
   const lastActionRef = useRef(0);
   const autoplayRef = useRef(false);
   const [contextMenu, setContextMenu] = useState(null);
+  const [addDialog, setAddDialog] = useState({id: 'add', open: false, controls: {url: '', hideControls: false}});
+  const [folderDialog, setFolderDialog] = useState({id: 'folder', action: 'create', open: false, controls: {name: ''}});
 
   const loadVideos = useCallback(async () => {
     try {
@@ -82,7 +84,7 @@ export default function App(props) {
       }
     } catch (e) {
       console.error(e);
-      setError(e.toString());
+      setError({open: true, message: e.toString()});
     }
 
     return null;
@@ -98,7 +100,7 @@ export default function App(props) {
         console.log('changing database driver.');
         await setDatabase(nSettings.databaseDriver, nSettings);
       } catch (e) {
-        setError(e.toString());
+        setError({open: true, message: e.toString()});
       }
     }
 
@@ -109,57 +111,64 @@ export default function App(props) {
         if (nVideos) {
           setVideos(nVideos);
         }
-        setError(null);
+        setError({...error, open: false});
         shouldLoadVideos.current = false;
       } catch (e) {
         console.error(e);
-        setError(e.toString());
+        setError({open: true, message: e.toString()});
       }
     }
     localStorage.setItem('settings', JSON.stringify(nSettings));
     TwitchAPI.setClient(nSettings.twitch);
-  }, [settings, setSettings, setError, loadVideos, setVideos,]);
+  }, [settings, setSettings, setError, loadVideos, setVideos, error,]);
 
   const addVideoUrl = useCallback(async ({url, controls}, callback) => {
     // add video by url
-    const video = new Video({url, controls,});
-
-    // set order to the last video + 1
-    if (videos.length > 0) {
-      video.order = videos[videos.length - 1].order + 1;
-    } else {
-      video.order = 0; // first video added
-    }
-
-    // get video information
     try {
-      await video.loadRemoteData(settings);
+      const video = new Video({url, controls,});
+
+      // set order to the last video + 1
+      if (videos.length > 0) {
+        video.order = videos[videos.length - 1].order + 1;
+      } else {
+        video.order = 0; // first video added
+      }
+
+      // get video information
+      try {
+        await video.loadRemoteData(settings);
+      } catch (e) {
+        console.error(e);
+        setError({open: true, message: e.toString()});
+        if (callback) {
+          callback(null);
+        }
+        return false;
+      }
+
+      const nVideos = [...videos, video];
+      setVideos(nVideos);
+
+      // save video to DB
+      console.log('Storing video', video);
+      await video.save(true);
+      console.log('Done storing.');
+
+      // save number of videos so we can show placeholder
+      localStorage.setItem('number_of_videos', nVideos.length);
+
+      // add to log
+      await video.log('create', {url,});
+
+      if (callback) {
+        callback(video);
+      }
     } catch (e) {
-      console.error(e);
-      setError(e.toString());
+      setError({open: true, message: e.toString()});
       if (callback) {
         callback(null);
       }
-      return false;
     }
-
-    const nVideos = [...videos, video];
-    setVideos(nVideos);
-
-    // save video to DB
-    console.log('Storing video', video);
-    await video.save();
-    console.log('Done storing.');
-
-    if (callback) {
-      callback(video);
-    }
-
-    // save number of videos so we can show placeholder
-    localStorage.setItem('number_of_videos', nVideos.length);
-
-    // add to log
-    await video.log('create', {url,});
   }, [videos, setVideos, settings]);
 
   const saveVideo = useCallback(async (video, callback = null, force = false) => {
@@ -200,7 +209,7 @@ export default function App(props) {
       try {
         await setDatabase(localSettings.databaseDriver ?? 'local', localSettings);
       } catch (e) {
-        setError(e.toString());
+        setError({open: true, message: e.toString()});
       }
       TwitchAPI.setClient(localSettings.twitch);
 
@@ -274,6 +283,35 @@ export default function App(props) {
     // so if we call setVideos with this it seems to restore the removed video
     setVideos(videos); 
   }, [videos, setVideos, saveVideo,]);
+
+  const addFolder = useCallback(async (props, callback) => {
+    try {
+      const {parentId, name} = props;
+
+      const video = new Video({parentId, title: name, isFolder: true, });
+
+      // set order to the last video + 1
+      if (videos.length > 0) {
+        video.order = videos[videos.length - 1].order + 1;
+      } else {
+        video.order = 0; // first video added
+      }
+
+      const nVideos = [...videos, video];
+      setVideos(nVideos);
+
+      await video.save(true);
+
+      // save number of videos so we can show placeholder
+      localStorage.setItem('number_of_videos', nVideos.length);
+
+      // add to log
+      await video.log('create-folder', {parentId, name,});
+    } catch (e) {
+      console.error(e);
+      setError({open: true, message: e.toString()});
+    }
+  }, [videos, setVideos, setError,]);
 
   const onDragEnter = useCallback((e) => {
     e.preventDefault();
@@ -369,8 +407,8 @@ export default function App(props) {
 
   return (
     <ThemeProvider theme={darkTheme}>
-      <LayoutContext.Provider value={{ title, setTitle, error, snack, setSnack, }}>
-        <VideosContext.Provider value={{ videos, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, loading, updateLastAction, autoplayRef, }}>
+      <LayoutContext.Provider value={{ title, setTitle, error, setError, snack, setSnack, addDialog, setAddDialog, folderDialog, setFolderDialog, }}>
+        <VideosContext.Provider value={{ videos, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, addFolder, loading, updateLastAction, autoplayRef, }}>
           <CssBaseline />
           <div className="app" id="app" onDrop={onDrop} onDragEnter={onDragEnter} onDragOver={(e) => e.preventDefault()} onDragLeave={onDragLeave} onMouseMove={onMouseMove} onKeyUp={onKeyUp} onClick={onClick} onContextMenu={handleContextMenu}>
             <HashRouter>

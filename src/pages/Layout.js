@@ -7,11 +7,12 @@
 import React, { useCallback, useContext, useState, } from 'react';
 import { Outlet, Link } from "react-router-dom";
 
-import { AppBar, Toolbar, Typography, useScrollTrigger, Box, Fab, Fade, IconButton, DialogActions, Button, DialogTitle, DialogContent, DialogContentText, TextField, Dialog, Snackbar, Alert, FormControlLabel, FormGroup, Checkbox, } from '@mui/material';
+import { AppBar, Toolbar, Typography, useScrollTrigger, Box, Fab, Fade, IconButton, DialogActions, Button, DialogTitle, DialogContent, DialogContentText, TextField, Dialog, Snackbar, Alert, FormControlLabel, FormGroup, Checkbox, Collapse, } from '@mui/material';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import LiveTvIcon from '@mui/icons-material/LiveTv';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AddLinkIcon from '@mui/icons-material/AddLink';
+import CloseIcon from '@mui/icons-material/Close';
 
 import LayoutContext from '../contexts/LayoutContext';
 import VideosContext from '../contexts/VideosContext';
@@ -53,37 +54,52 @@ function ScrollTop(props) {
 }
 
 export default function Layout(props) {
-  const { title, error, snack, } = useContext(LayoutContext);
-  const { addVideoUrl } = useContext(VideosContext);
-  const [showAddVideo, setShowAddVideo] = useState(false);
-  const [addUrl, setAddUrl] = useState('');
-  const [hideControls, setHideControls] = useState(false);
+  const { title, error, setError, snack, addDialog, setAddDialog, folderDialog, setFolderDialog, } = useContext(LayoutContext);
+  const { addVideoUrl, addFolder, } = useContext(VideosContext);
   const [showGettingVideo, setShowGettingVideo] = useState(false);
 
   const onShowAddVideo = useCallback(() => {
     if (!showGettingVideo) {
-      setShowAddVideo(true);
-      setHideControls(false);
+      setAddDialog({...addDialog, open: true, controls: {url: '', hideControls: false}});
     }
-  }, [setShowAddVideo, setHideControls, showGettingVideo]);
+  }, [showGettingVideo, setAddDialog, addDialog, ]);
 
-  const handleClose = useCallback(() => {
-    setShowAddVideo(false);
-  }, [setShowAddVideo]);
+  const handleClose = useCallback((e, dialog, setDialog) => {
+    setDialog({...dialog, open: false});
+  }, []);
 
-  const handleSubmit = useCallback(async (e) => {
+  const handleSubmit = useCallback(async (e, dialog, setDialog) => {
     e.preventDefault();
-    setShowGettingVideo(true);
 
-    addVideoUrl({url: addUrl, controls: !hideControls}, () => {
-      setShowGettingVideo(false);
-    });
-    setShowAddVideo(false);
-  }, [addUrl, hideControls, addVideoUrl]);
+    console.log(e, dialog, setDialog);
+    if (dialog.id === 'add') {
+      if (dialog.controls.url.trim() === '') {
+        return;
+      }
+      setShowGettingVideo(true);
 
-  const handleChange = useCallback((event) => {
-    setAddUrl(event.target.value);
-  }, [setAddUrl]);
+      addVideoUrl({url: dialog.controls.url, controls: !dialog.controls.hideControls}, () => {
+        setShowGettingVideo(false);
+      });
+      setDialog({...dialog, open: false});
+    } else if (dialog.id === 'folder') {
+      try {
+        addFolder({parentId: '', name: dialog.controls.name});
+        setFolderDialog({...folderDialog, open: false});
+      } catch (e) {
+        console.error(e);
+        setError({open: true, message: e.toString()});
+      }
+    } else {
+      console.error('Unhandled dialog.');
+    }
+  }, [setShowGettingVideo, addVideoUrl, setError, addFolder, folderDialog, setFolderDialog, ]);
+
+  const handleChange = useCallback((e, dialog, setDialog, key, value) => {
+    let controls = {...dialog.controls};
+    controls[key] = value;
+    setDialog({...dialog, controls, });
+  }, []);
 
   return (
     <>
@@ -119,14 +135,14 @@ export default function Layout(props) {
         </Toolbar>
       </AppBar>
       <Toolbar id="back-to-top-anchor" />
-      {error && (
-        <Alert severity="error">
-          { error }
+      <Collapse in={error.open}>
+        <Alert severity="error" action={<IconButton color="inherit" size="small" onClick={() => { setError({...error, open: false}); }}><CloseIcon fontSize="inherit" /></IconButton>} sx={{mt: 2}}>
+          { error.message }
         </Alert>
-      )}
+      </Collapse>
       <Outlet />
-      <Dialog open={showAddVideo} onClose={handleClose}>
-        <form onSubmit={handleSubmit}>
+      <Dialog open={addDialog.open} onClose={(e) => handleClose(e, addDialog, setAddDialog)}>
+        <form onSubmit={(e) => handleSubmit(e, addDialog, setAddDialog)}>
           <DialogTitle>Add Video</DialogTitle>
           <DialogContent>
             <DialogContentText>
@@ -140,15 +156,36 @@ export default function Layout(props) {
               type="url"
               fullWidth
               variant="standard"
-              onChange={handleChange}
+              onChange={(e) => handleChange(e, addDialog, setAddDialog, 'url', e.target.value)}
             />
             <FormGroup>
-              <FormControlLabel control={<Checkbox onChange={(e) => {setHideControls(e.target.checked)}} />} label="Hide Controls and Progress" />
+              <FormControlLabel control={<Checkbox onChange={(e) => handleChange(e, addDialog, setAddDialog, 'hideControls', e.target.checked)} />} label="Hide Controls and Progress" />
             </FormGroup>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleClose}>Cancel</Button>
-            <Button onClick={handleSubmit}>Add Video</Button>
+            <Button onClick={(e) => handleClose(e, addDialog, setAddDialog)}>Cancel</Button>
+            <Button onClick={(e) => handleSubmit(e, addDialog, setAddDialog)}>Add Video</Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+      <Dialog open={folderDialog.open} onClose={(e) => handleClose(e, folderDialog, setFolderDialog)}>
+        <form onSubmit={(e) => handleSubmit(e, folderDialog, setFolderDialog)}>
+          <DialogTitle>{folderDialog.action === 'create' ? 'New' : 'Rename'} Folder</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="folder-name"
+              label="Name"
+              type="text"
+              fullWidth
+              variant="standard"
+              onChange={(e) => handleChange(e, folderDialog, setFolderDialog, 'name', e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={(e) => handleClose(e, folderDialog, setFolderDialog)}>Cancel</Button>
+            <Button onClick={(e) => handleSubmit(e, folderDialog, setFolderDialog)}>{folderDialog.action === 'create' ? 'Create' : 'Rename'} Folder</Button>
           </DialogActions>
         </form>
       </Dialog>

@@ -55,25 +55,35 @@ function YTDurationToSeconds(duration) {
 class Video {
     constructor(props) {
         this.uuid = props.uuid ?? uuidv4();
+        this.parentId = props.parentId ?? 0;
         this.order = parseInt(props.order ?? -1, 10);
         this.url = props.url;
 
         // parse source
-        if (this.url.includes('twitch.tv')) {
-            this.source = 'twitch';
+        if (this.url) {
+            if (this.url.includes('twitch.tv')) {
+                this.source = 'twitch';
+            } else if (this.url.includes('youtube.com') || this.url.includes('youtu.be')) {
+                this.source = 'youtube';
+            } else {
+                this.source = 'unknown';
+            }
+
+            // get t (time) param
+            const t = new URLSearchParams(new URL(this.url).search).get('t');
+
+            this.position = props.position ?? (t ? parseStringTime(t) : 0);
         } else {
-            this.source = 'youtube';
+            this.source = 'unknown';
+            this.position = 0;
         }
 
-        // get t param
-        const t = new URLSearchParams(new URL(this.url).search).get('t');
-
-        this.position = props.position ?? (t ? parseStringTime(t) : 0);
         this.duration = props.duration ?? 0;
         this.thumbnailUrl = props.thumbnailUrl ?? null;
         this.title = props.title ?? null;
         this.description = props.description ?? null;
         this.controls = props.controls ?? true;
+        this.isFolder = props.isFolder ?? false;
 
         this._originalAttributes = this.toObject();
     }
@@ -81,6 +91,7 @@ class Video {
     toObject() {
         return {
             uuid: this.uuid,
+            parentId: this.parentId,
             order: this.order,
             url: this.url,
             source: this.source,
@@ -90,6 +101,7 @@ class Video {
             title: this.title,
             description: this.description,
             controls: this.controls,
+            isFolder: this.isFolder,
         }
     }
 
