@@ -4,7 +4,7 @@
  * See README.md
  */
 
-import React, { useCallback, useContext, useState, useEffect, } from 'react';
+import React, { useCallback, useContext, } from 'react';
 
 import { Menu, MenuItem, ListItemIcon, ListItemText, } from '@mui/material';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
@@ -12,9 +12,7 @@ import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import VideosContext from '../contexts/VideosContext';
 import LayoutContext from '../contexts/LayoutContext';
 
-const isVideoUrl = (url) => {
-  return url.includes('youtube.com') || url.includes('youtu.be') || url.includes('twitch.tv');
-};
+import { isVideoUrl } from '../models/Video';
 
 export default function AppContextMenu({ contextMenu, onClose }) {
   const { addVideoUrl, } = useContext(VideosContext);

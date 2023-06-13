@@ -8,6 +8,10 @@ import { getDatabase } from '../database/Database';
 import TwitchAPI from '../models/TwitchAPI';
 import { v4 as uuidv4 } from 'uuid';
 
+export function isVideoUrl(url) {
+    return url.includes('youtube.com') || url.includes('youtu.be') || url.includes('twitch.tv');
+};
+
 function parseStringTime(s) {
     var match = s.match(/(\d+h)?(\d+m)?(\d+s)?/);
     match = match.slice(1).map(function(x) {
