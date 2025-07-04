@@ -11,13 +11,15 @@ import PlaylistRemoveIcon from '@mui/icons-material/PlaylistRemove';
 import LinkIcon from '@mui/icons-material/Link';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import RestoreIcon from '@mui/icons-material/Restore';
+import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom';
+import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
 
 import VideosContext from '../contexts/VideosContext';
 import LayoutContext from '../contexts/LayoutContext';
 import PlayerContext from '../contexts/PlayerContext';
 
 export default function VideoContextMenu({ video, contextMenu, onClose, currentVideo, setCurrentVideo, }) {
-  const { removeVideo, restoreVideo, saveVideo, } = useContext(VideosContext);
+  const { removeVideo, restoreVideo, saveVideo, changeVideoOrder, videos, } = useContext(VideosContext);
   const { setSnack } = useContext(LayoutContext);
   const playerContext = useContext(PlayerContext);
 
@@ -88,6 +90,15 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
     }, 3000);
   }, [video, onClose, setSnack, removeVideo, restoreVideo, ]);
 
+  const onMove = useCallback((target) => {
+    console.log(video);
+    const fromIndex = video.order, 
+      toIndex = target === 0 ? 0 : videos.length - 1;
+    console.log('Changing order from ' + fromIndex + ' to ' + toIndex);
+    changeVideoOrder(video, fromIndex, toIndex);
+    onClose();
+  }, [video, onClose, videos, changeVideoOrder,]);
+
   return (
     <>
       <Menu open={contextMenu !== null} onClose={onClose} anchorReference="anchorPosition" anchorPosition={contextMenu !== null ? {top: contextMenu.mouseY, left: contextMenu.mouseX} : undefined}>
@@ -115,6 +126,19 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
             <LinkIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Copy Video URL</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => {onMove(0)}}>
+          <ListItemIcon>
+            <VerticalAlignTopIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Move to Top</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => {onMove(1)}}>
+          <ListItemIcon>
+            <VerticalAlignBottomIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Move to Bottom</ListItemText>
         </MenuItem>
       </Menu>
       

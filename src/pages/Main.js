@@ -98,14 +98,23 @@ export default function Main(props) {
 
     const key = e.key.toUpperCase();
 
+    // Ctrl + V
     if (e.ctrlKey && key === 'V') {
+      const target = e.target;
+      if (target.tagName !== 'BODY') {
+        // can only paste if focus on body
+        return;
+      }
+      
+      const addBottom = !e.shiftKey; // Shift + Ctrl + V to paste to top
+
       // paste video url
       const clipText = await navigator.clipboard.readText();
       if (!isVideoUrl(clipText)) {
         return;
       }
   
-      addVideoUrl({url: clipText});
+      addVideoUrl({url: clipText, addBottom});
   
       let snack = {
         open: true,

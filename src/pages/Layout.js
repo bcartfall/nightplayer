@@ -58,14 +58,16 @@ export default function Layout(props) {
   const [showAddVideo, setShowAddVideo] = useState(false);
   const [addUrl, setAddUrl] = useState('');
   const [hideControls, setHideControls] = useState(false);
+  const [addBottom, setAddBottom] = useState(false);
   const [showGettingVideo, setShowGettingVideo] = useState(false);
 
   const onShowAddVideo = useCallback(() => {
     if (!showGettingVideo) {
       setShowAddVideo(true);
       setHideControls(false);
+      setAddBottom(true);
     }
-  }, [setShowAddVideo, setHideControls, showGettingVideo]);
+  }, [setShowAddVideo, setHideControls, setAddBottom, showGettingVideo]);
 
   const handleClose = useCallback(() => {
     setShowAddVideo(false);
@@ -75,11 +77,11 @@ export default function Layout(props) {
     e.preventDefault();
     setShowGettingVideo(true);
 
-    addVideoUrl({url: addUrl, controls: !hideControls}, () => {
+    addVideoUrl({url: addUrl, controls: !hideControls, addBottom,}, () => {
       setShowGettingVideo(false);
     });
     setShowAddVideo(false);
-  }, [addUrl, hideControls, addVideoUrl]);
+  }, [addUrl, hideControls, addBottom, addVideoUrl]);
 
   const handleChange = useCallback((event) => {
     setAddUrl(event.target.value);
@@ -143,7 +145,10 @@ export default function Layout(props) {
               onChange={handleChange}
             />
             <FormGroup>
-              <FormControlLabel control={<Checkbox onChange={(e) => {setHideControls(e.target.checked)}} />} label="Hide Controls and Progress" />
+              <FormControlLabel checked={hideControls} control={<Checkbox onChange={(e) => {setHideControls(e.target.checked)}} />} label="Hide Controls and Progress" />
+            </FormGroup>
+            <FormGroup>
+              <FormControlLabel checked={addBottom} control={<Checkbox onChange={(e) => {setAddBottom(e.target.checked)}} />} label="Add to Bottom" />
             </FormGroup>
           </DialogContent>
           <DialogActions>

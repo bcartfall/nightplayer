@@ -25,6 +25,12 @@ Or build the electron application:
 yarn package
 ```
 
+# Development
+
+```
+yarn start
+```
+
 ## Database
 
 ### IndexedDB

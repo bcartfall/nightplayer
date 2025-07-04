@@ -120,15 +120,35 @@ export default function App(props) {
     TwitchAPI.setClient(nSettings.twitch);
   }, [settings, setSettings, setError, loadVideos, setVideos,]);
 
-  const addVideoUrl = useCallback(async ({url, controls}, callback) => {
+  const addVideoUrl = useCallback(async (props, callback) => {
     // add video by url
+    const defaultProps = {
+      url: null,
+      controls: true,
+      addBottom: true,
+    };
+    const {
+      url,
+      controls,
+      addBottom,
+    } = { ...defaultProps, ...props };
     const video = new Video({url, controls,});
 
     // set order to the last video + 1
-    if (videos.length > 0) {
+    let nVideos;
+    if (videos.length > 0 && addBottom) {
+      // add video to bottom
       video.order = videos[videos.length - 1].order + 1;
+      nVideos = [...videos, video];
     } else {
-      video.order = 0; // first video added
+      // add video to top
+      video.order = 0; // this will be saved later
+      nVideos = [video, ...videos];
+      for (let i in videos) {
+        const tVideo = videos[i];
+        tVideo.order = i + 1;
+        await tVideo.save(true);
+      }
     }
 
     // get video information
@@ -143,7 +163,6 @@ export default function App(props) {
       return false;
     }
 
-    const nVideos = [...videos, video];
     setVideos(nVideos);
 
     // save video to DB
