@@ -138,6 +138,9 @@ export default function Settings({ settings, saveSettings, }) {
                 </Select>
               </FormControl>
             </Grid>
+            <Grid item xs={12}>
+              <TextField fullWidth required label="yt-dlp Web UI Host" value={settings.ytdlp.host || ''} onFocus={e => { e.target.select() }} onChange={(e) => { onChange('ytdlp.host', e.target.value) }} />
+            </Grid>
           </Grid>
         </FormGroup>
         {settings.databaseDriver === 'firebase' && (

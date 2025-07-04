@@ -214,7 +214,21 @@ export default function App(props) {
           },
         };
       }
+      if (!localSettings.ytdlp) {
+        localSettings.ytdlp = {
+          host: null,
+        };
+      }
       setSettings(localSettings);
+
+      for (let video of videos) {
+        if (video.ytdlpComplete === 0) {
+          // resume download progress / status
+          setTimeout(() => {
+            video.updateDownloadProgress(settings);
+          }, 1000);
+        }
+      }
 
       try {
         await setDatabase(localSettings.databaseDriver ?? 'local', localSettings);
@@ -232,7 +246,7 @@ export default function App(props) {
     };
     fetchDB();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [videos,]);
 
   const changeVideoOrder = useCallback((changeVideo, fromIndex, toIndex) => {
     let nVideos = [...videos];
@@ -293,6 +307,47 @@ export default function App(props) {
     // so if we call setVideos with this it seems to restore the removed video
     setVideos(videos); 
   }, [videos, setVideos, saveVideo,]);
+
+  const downloadVideo = useCallback(async (video) => {
+    console.log('Downloading video with yt-dlp');
+    if (!settings.ytdlp.host) {
+      return;
+    }
+    if (video.ytdlpComplete !== -1) {
+      console.error('Video is already downloading.');
+      return;
+    }
+
+    video.ytdlpProgress = -1;
+    video.ytdlpSpeed = 0;
+
+    // send POST to download
+    const response = await fetch(`${settings.ytdlp.host}/api/v1/exec`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: video.url,
+        params: [],
+      })
+    });
+    if (!response.ok) {
+      console.error('Error sending download request.');
+    }
+    const responseData = await response.json();
+
+    // save to video
+    console.log('Download started. uuid=' + responseData);
+    video.ytdlpUuid = responseData;
+    video.ytdlpComplete = 0;
+    await video.save();
+
+    // progress updates
+    setTimeout(() => {
+      video.updateDownloadProgress(settings);
+    }, 1000);
+  }, [settings]);
 
   const onDragEnter = useCallback((e) => {
     e.preventDefault();
@@ -389,7 +444,7 @@ export default function App(props) {
   return (
     <ThemeProvider theme={darkTheme}>
       <LayoutContext.Provider value={{ title, setTitle, error, snack, setSnack, }}>
-        <VideosContext.Provider value={{ videos, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, loading, updateLastAction, autoplayRef, }}>
+        <VideosContext.Provider value={{ videos, settings, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, downloadVideo, loading, updateLastAction, autoplayRef, }}>
           <CssBaseline />
           <div className="app" id="app" onDrop={onDrop} onDragEnter={onDragEnter} onDragOver={(e) => e.preventDefault()} onDragLeave={onDragLeave} onMouseMove={onMouseMove} onKeyUp={onKeyUp} onClick={onClick} onContextMenu={handleContextMenu}>
             <HashRouter>

@@ -78,6 +78,10 @@ class Video {
         this.title = props.title ?? null;
         this.description = props.description ?? null;
         this.controls = props.controls ?? true;
+        this.ytdlpUuid = props.ytdlpUuid ?? '';
+        this.ytdlpComplete = props.ytdlpComplete ?? -1; // -1 not started, 0 false, 1 = true
+        this.ytdlpProgress = 0; // don't save or serialize
+        this.ytdlpSpeed = 0; // don't save or serialize
 
         this._originalAttributes = this.toObject();
     }
@@ -94,6 +98,8 @@ class Video {
             title: this.title,
             description: this.description,
             controls: this.controls,
+            ytdlpUuid: this.ytdlpUuid,
+            ytdlpComplete: this.ytdlpComplete,
         }
     }
 
@@ -189,6 +195,64 @@ class Video {
             // parse twitch duration // 1h22m28s
             this.duration = parseStringTime(json.data[0].duration);
             console.log(this);
+        }
+    }
+
+    async updateDownloadProgress(settings) {
+        console.log('Updating download progress.');
+        if (!settings || !settings.ytdlp) {
+            console.log('Settings not loaded.', settings);
+            return;
+        }
+
+        if (this.ytdlpUuid === '') {
+            console.log('UUID not found.');
+            this.ytdlpComplete = -1;
+            this.ytdlpUuid = '';
+            await this.save();
+            return;
+        }
+
+        // set GET request
+        const response = await fetch(`${settings.ytdlp.host}/api/v1/running`, {
+            method: 'GET',
+        });
+        if (!response.ok) {
+            console.error('Error sending download request.');
+        }
+        const responseData = await response.json();
+
+        let item = null;
+        for (let obj of responseData) {
+            if (obj.id === this.ytdlpUuid) {
+                item = obj;
+                break;
+            }
+        }
+        if (!item) {
+            console.log('Video not found.');
+            this.ytdlpComplete = -1;
+            this.ytdlpUuid = '';
+            await this.save();
+            return;
+        }
+
+        const percentage = item.progress.percentage;
+        if (percentage === '-1') {
+            console.log('Video download completed.');
+            this.ytdlpComplete = 1;
+            this.ytdlpProgress = 1.0;
+            await this.save();
+        }
+
+        this.ytdlpProgress = percentage.slice(0, -1) * 0.01;
+        this.ytdlpSpeed = item.progress.speed;
+
+        if (this.ytdlpComplete === 0) {
+            // check again in 1s
+            setTimeout(() => {
+                this.updateDownloadProgress(settings);
+            }, 1000);
         }
     }
 };

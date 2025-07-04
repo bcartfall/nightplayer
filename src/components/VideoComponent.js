@@ -4,19 +4,41 @@
  * See README.md
  */
 
-import React, { useContext, useState, } from 'react';
+import React, { useContext, useState, useEffect, } from 'react';
 
-import { Card, Box, CardMedia, Typography, LinearProgress, Grow, } from '@mui/material';
+import { Card, Box, CardMedia, Typography, LinearProgress, Grow, Chip, } from '@mui/material';
 import { useNavigate } from "react-router-dom";
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import DownloadDoneIcon from '@mui/icons-material/DownloadDone';
 import VideoContextMenu from './VideoContextMenu';
 
 import VideosContext from '../contexts/VideosContext';
+
+const humanFileSize = (size) => {
+  var i = size === 0 ? 0 : Math.floor(Math.log(size) / Math.log(1024));
+  return (size / Math.pow(1024, i)).toFixed(2) + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
+};
 
 export default function VideoComponent({ video, index, dragIndex, dragDirection, onDragStart, onDragEnd, onDragEnter, onDragLeave, }) {
   const navigate = useNavigate();
   const [contextMenu, setContextMenu] = useState(null);
   const { autoplayRef, } = useContext(VideosContext);
+  const [ytdlpProgress, setYtdlpProgress] = useState(0);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      // check for updates
+      if (video.ytdlpProgress !== ytdlpProgress) {
+        setYtdlpProgress(video.ytdlpProgress);
+      }
+    }, 42);
+
+    // Cleanup function
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [ytdlpProgress, setYtdlpProgress, video,]);
 
   const handleContextMenu = (event) => {
     event.preventDefault();
@@ -79,6 +101,8 @@ export default function VideoComponent({ video, index, dragIndex, dragDirection,
       <div onClick={playVideo}>
         <Grow key={video.uuid} in={true}>
           <Box className="video-card" sx={{borderRadius: '15px', overflow: 'hidden', backgroundColor: '#000', }}>
+            {video.ytdlpComplete === 0 && 
+              <LinearProgress className="videoPlayerProgress" color="success" variant="determinate" value={Math.max(0, ytdlpProgress) * 100} />}
             <Card sx={{position: 'relative'}}>
               <Box className="cover">
                 <Box className="center">
@@ -93,7 +117,15 @@ export default function VideoComponent({ video, index, dragIndex, dragDirection,
               />
               <Box sx={{ position: 'absolute', right: 8, bottom: 8, fontSize: '0.8rem', borderRadius: 2, backgroundColor: 'black', p: 0.25, pl: 0.75, pr: 0.75 }}>{duration}</Box>
             </Card>
-            <Typography sx={{m: 2, textOverflow: 'ellipsis', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden',}}>{video.title}</Typography>
+            <Typography sx={{ m: 2, textOverflow: 'ellipsis', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', }}>{video.title}</Typography>
+
+            {video.ytdlpComplete === 0 &&
+              <FileDownloadIcon fontSize="small" sx={{ position: 'absolute', left: '10px', top: '10px' }} />}
+            {video.ytdlpComplete === 0 &&
+              <Chip label={humanFileSize(video.ytdlpSpeed) + '/s'} variant="outlined" sx={{ position: 'absolute', left: '32px', top: '10px' }} />}
+            {video.ytdlpComplete === 1 &&
+              <DownloadDoneIcon fontSize="small" sx={{ position: 'absolute', left: '10px', top: '10px' }} />}
+
             {progress > 0 &&
               <LinearProgress className="videoPlayerProgress" color={color} variant="determinate" value={progress} />}
             {progress <= 0 &&

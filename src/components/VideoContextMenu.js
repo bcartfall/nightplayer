@@ -13,13 +13,14 @@ import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import RestoreIcon from '@mui/icons-material/Restore';
 import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom';
 import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
 import VideosContext from '../contexts/VideosContext';
 import LayoutContext from '../contexts/LayoutContext';
 import PlayerContext from '../contexts/PlayerContext';
 
 export default function VideoContextMenu({ video, contextMenu, onClose, currentVideo, setCurrentVideo, }) {
-  const { removeVideo, restoreVideo, saveVideo, changeVideoOrder, videos, } = useContext(VideosContext);
+  const { removeVideo, restoreVideo, saveVideo, changeVideoOrder, videos, settings, downloadVideo, } = useContext(VideosContext);
   const { setSnack } = useContext(LayoutContext);
   const playerContext = useContext(PlayerContext);
 
@@ -91,13 +92,17 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
   }, [video, onClose, setSnack, removeVideo, restoreVideo, ]);
 
   const onMove = useCallback((target) => {
-    console.log(video);
     const fromIndex = video.order, 
       toIndex = target === 0 ? 0 : videos.length - 1;
     console.log('Changing order from ' + fromIndex + ' to ' + toIndex);
     changeVideoOrder(video, fromIndex, toIndex);
     onClose();
   }, [video, onClose, videos, changeVideoOrder,]);
+
+  const onDownload = useCallback(() => {
+    downloadVideo(video);
+    onClose();
+  }, [video, downloadVideo, onClose,]);
 
   return (
     <>
@@ -140,8 +145,18 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
           </ListItemIcon>
           <ListItemText>Move to Bottom</ListItemText>
         </MenuItem>
+        {settings.ytdlp.host && (video.ytdlpComplete === -1) && (
+          <div>
+            <Divider />
+            <MenuItem onClick={onDownload}>
+              <ListItemIcon>
+                <FileDownloadIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Download</ListItemText>
+            </MenuItem>
+          </div>
+        )}
       </Menu>
-      
     </>
   )
 };
