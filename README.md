@@ -44,9 +44,11 @@ Data can be stored online using Firebase as the database driver so that applicat
 Create a new Firebase application and configure Firestore. 
 
 1. Copy the Firebase configuration variables in the application settings page.
-2. Configure Firestore to allow anonymouse authentication.
+- Project Settings => General => Your Apps => Create a new Web App
+2. Configure Firestore to allow anonymous authentication.
+- Authentication => Get Started => Anonymous
 3. Configure Firestore rules to require authentication.
-
+- Firestore Database => Rules => Copy configuration from below => Publish.
 ```
 rules_version = '2';
 service cloud.firestore {

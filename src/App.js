@@ -145,6 +145,7 @@ export default function App(props) {
       video.order = 0; // this will be saved later
       nVideos = [video, ...videos];
       for (let i in videos) {
+        i = parseInt(i, 10);
         const tVideo = videos[i];
         tVideo.order = i + 1;
         await tVideo.save(true);
@@ -289,13 +290,14 @@ export default function App(props) {
     let nVideos = videos.filter((item) => {
       return item.uuid !== video.uuid;
     });
-    console.log(nVideos);
-    setVideos(nVideos);
     await getDatabase().delete('logs', '*', {where: [['video_id', '=', video.uuid]]});
     await getDatabase().delete('videos', video.uuid);
 
     // save number of videos so we can show placeholder
     localStorage.setItem('number_of_videos', nVideos.length);
+    
+    console.log(nVideos);
+    setVideos(nVideos);
   }, [videos, setVideos]);
 
   const restoreVideo = useCallback(async (video) => {
