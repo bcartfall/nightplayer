@@ -39,6 +39,17 @@ function youtube_parser(url){
     return (match&&match[7].length===11)? match[7] : false;
 }
 
+function twitch_parser(url) {
+    const regex = /\/videos\/(\d+)/;
+    const match = url.match(regex);
+
+    if (match) {
+      const videoId = match[1];
+      return videoId;
+    }
+    return null;
+}
+
 function YTDurationToSeconds(duration) {
     var match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
 
@@ -150,6 +161,37 @@ class Video {
         return this.thumbnailUrl.replace('%{width}', width).replace('%{height}', height);
     }
 
+    getYtpId() {
+        if (this.source === 'youtube') {
+            return 'youtube ' + youtube_parser(this.url);
+        } else if (this.source === 'twitch') {
+            return 'twitch ' + twitch_parser(this.url);
+        }
+        throw new Error('Unhandled source');
+    }
+
+    async getYtpUrl(settings) {
+        console.log("Getting physical file from yt-dlp gui");
+        if (!settings.ytdlp.host) {
+        return;
+        }
+        if (this.ytdlpComplete !== 1) {
+        console.error("Video is not done downloading.");
+        return;
+        }
+
+        // get information about file
+        const response = await fetch(`${settings.ytdlp.host}/api/history/${encodeURIComponent(this.ytdlpUuid)}`, {
+        method: "GET",
+        });
+        if (!response.ok) {
+        console.error("Error getting live history.");
+        }
+        const data = await response.json();
+        const filename = data.filename;
+        return `${settings.ytdlp.host}/api/download/${encodeURIComponent(filename)}`;
+    }
+
     /**
      * Load data about video from youtube/twitch such as thumbnail, description, etc...
      */
@@ -214,7 +256,7 @@ class Video {
         }
 
         // set GET request
-        const response = await fetch(`${settings.ytdlp.host}/api/v1/running`, {
+        const response = await fetch(`${settings.ytdlp.host}/api/history/live`, {
             method: 'GET',
         });
         if (!response.ok) {
@@ -222,31 +264,20 @@ class Video {
         }
         const responseData = await response.json();
 
-        let item = null;
-        for (let obj of responseData) {
-            if (obj.id === this.ytdlpUuid) {
-                item = obj;
-                break;
-            }
-        }
+        let item = responseData.queue[this.ytdlpUuid];
         if (!item) {
-            console.log('Video not found.');
-            this.ytdlpComplete = -1;
-            this.ytdlpUuid = '';
+            console.log('Video not found, assuming video complete.');
+            this.ytdlpComplete = 1;
+            this.ytdlpProgress = 1.0;
             await this.save();
             return;
         }
 
-        const percentage = item.progress.percentage;
-        if (percentage === '-1') {
-            console.log('Video download completed.');
-            this.ytdlpComplete = 1;
-            this.ytdlpProgress = 1.0;
-            await this.save();
-        }
+        const percentage = item.percent;
 
-        this.ytdlpProgress = percentage.slice(0, -1) * 0.01;
-        this.ytdlpSpeed = item.progress.speed;
+        this.ytdlpProgress = percentage * 0.01;
+        this.ytdlpSpeed = item.speed;
+        console.log(`progress = ${this.ytdlpProgress}, speed=${this.ytdlpSpeed}`);
 
         if (this.ytdlpComplete === 0) {
             // check again in 1s

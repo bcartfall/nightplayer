@@ -29,6 +29,8 @@ import TwitchAPI from './models/TwitchAPI';
 import Video from './models/Video';
 import AppContextMenu from './components/AppContextMenu';
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
@@ -286,6 +288,19 @@ export default function App(props) {
 
   const removeVideo = useCallback(async (video) => {
     console.log('Removing video', video);
+    
+    const responseDelete = await fetch(`${settings.ytdlp.host}/api/history`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type: "done",
+        ids: [video.ytdlpUuid],
+        remove_file: true,
+      }),
+    });
+    console.log(await responseDelete.json());
 
     let nVideos = videos.filter((item) => {
       return item.uuid !== video.uuid;
@@ -298,11 +313,12 @@ export default function App(props) {
     
     console.log(nVideos);
     setVideos(nVideos);
-  }, [videos, setVideos]);
+  }, [videos, setVideos, settings,]);
 
   const restoreVideo = useCallback(async (video) => {
     console.log('Restoring video', video);
     // add video and sort by order
+    video.ytdlpUuid = ''; // clear download information, we cannot restore the deleted file
     saveVideo(video, null, true); // save to DB
 
     // the state of the VideoContextMenu that was removed appears to have the video before it was removed
@@ -323,25 +339,74 @@ export default function App(props) {
     video.ytdlpProgress = -1;
     video.ytdlpSpeed = 0;
 
-    // send POST to download
-    const response = await fetch(`${settings.ytdlp.host}/api/v1/exec`, {
-      method: 'POST',
+    // clear from archive
+    console.log(`Clearing video from archive`);
+    const responseArchive = await fetch(`${settings.ytdlp.host}/api/archiver`, {
+      method: "DELETE",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({
+      body: JSON.stringify(
+        {
+          preset: "default",
+          items: [video.getYtpId()],
+        },
+      ),
+    });
+    const responseDataArchive = await responseArchive.json();
+    console.log(responseDataArchive);
+
+    // send POST add to queue
+    console.log(`Sending url to download ${video.url}`);
+    const response = await fetch(`${settings.ytdlp.host}/api/history`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([{
         url: video.url,
-        params: [],
-      })
+        auto_start: true,
+      }]),
     });
     if (!response.ok) {
       console.error('Error sending download request.');
     }
-    const responseData = await response.json();
+    //const responseData = await response.json();
+
+    // get LIVE information to store Uuid since POST add only returns batch_id (which we can't use anywhere)
+    // we have to wait for YTPTube to fetch information about the video and start the download
+    console.log(`Getting queue.`);
+    let wait = 500, attempt = 0;
+    let queueItem = null;
+    while (attempt++ < 60) {
+      console.log(`Waiting ${wait}ms, attempt ${attempt}`);
+      await sleep(wait);
+
+      const responseLive = await fetch(`${settings.ytdlp.host}/api/history/live`, {
+        method: "GET",
+      });
+      if (!responseLive.ok) {
+        console.error("Error getting live history.");
+      }
+      const responseDataLive = await responseLive.json();
+      for (let uuid in responseDataLive.queue) {
+        let item = responseDataLive.queue[uuid];
+        if (item.url === video.url) {
+          queueItem = item;
+          attempt = 999; // break out of while loop
+          break;
+        }
+      }
+    }
+
+    if (!queueItem) {
+      console.error("Error getting item from live history.");
+    }
 
     // save to video
-    console.log('Download started. uuid=' + responseData);
-    video.ytdlpUuid = responseData;
+    console.log('Download started', queueItem._id);
+
+    video.ytdlpUuid = queueItem._id;
     video.ytdlpComplete = 0;
     await video.save();
 
@@ -350,6 +415,18 @@ export default function App(props) {
       video.updateDownloadProgress(settings);
     }, 1000);
   }, [settings]);
+
+  const openDownloadedVideo = useCallback(
+    async (video) => {
+      const url = await video.getYtpUrl(settings);
+      if (url) {
+        window.open(url, "_blank");
+      } else {
+        console.error("Error getting url");
+      }
+    },
+    [settings],
+  );
 
   const onDragEnter = useCallback((e) => {
     e.preventDefault();
@@ -446,7 +523,7 @@ export default function App(props) {
   return (
     <ThemeProvider theme={darkTheme}>
       <LayoutContext.Provider value={{ title, setTitle, error, snack, setSnack, }}>
-        <VideosContext.Provider value={{ videos, settings, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, downloadVideo, loading, updateLastAction, autoplayRef, }}>
+        <VideosContext.Provider value={{ videos, settings, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, downloadVideo, openDownloadedVideo, loading, updateLastAction, autoplayRef, }}>
           <CssBaseline />
           <div className="app" id="app" onDrop={onDrop} onDragEnter={onDragEnter} onDragOver={(e) => e.preventDefault()} onDragLeave={onDragLeave} onMouseMove={onMouseMove} onKeyUp={onKeyUp} onClick={onClick} onContextMenu={handleContextMenu}>
             <HashRouter>

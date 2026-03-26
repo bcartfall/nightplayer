@@ -14,13 +14,14 @@ import RestoreIcon from '@mui/icons-material/Restore';
 import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom';
 import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import FileOpenIcon from "@mui/icons-material/FileOpen";
 
 import VideosContext from '../contexts/VideosContext';
 import LayoutContext from '../contexts/LayoutContext';
 import PlayerContext from '../contexts/PlayerContext';
 
 export default function VideoContextMenu({ video, contextMenu, onClose, currentVideo, setCurrentVideo, }) {
-  const { removeVideo, restoreVideo, saveVideo, changeVideoOrder, videos, settings, downloadVideo, } = useContext(VideosContext);
+  const { removeVideo, restoreVideo, saveVideo, changeVideoOrder, videos, settings, downloadVideo, openDownloadedVideo, } = useContext(VideosContext);
   const { setSnack } = useContext(LayoutContext);
   const playerContext = useContext(PlayerContext);
 
@@ -104,9 +105,23 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
     onClose();
   }, [video, downloadVideo, onClose,]);
 
+  const onOpenDownloaded = useCallback(() => {
+    openDownloadedVideo(video);
+    onClose();
+  }, [video, openDownloadedVideo, onClose]);
+
   return (
     <>
-      <Menu open={contextMenu !== null} onClose={onClose} anchorReference="anchorPosition" anchorPosition={contextMenu !== null ? {top: contextMenu.mouseY, left: contextMenu.mouseX} : undefined}>
+      <Menu
+        open={contextMenu !== null}
+        onClose={onClose}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu !== null
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+            : undefined
+        }
+      >
         <MenuItem onClick={onRemove}>
           <ListItemIcon>
             <PlaylistRemoveIcon fontSize="small" />
@@ -118,7 +133,9 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
           <ListItemIcon>
             <MenuOpenIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>{ video.controls ? 'Hide' : 'Show' } Controls and Progress</ListItemText>
+          <ListItemText>
+            {video.controls ? "Hide" : "Show"} Controls and Progress
+          </ListItemText>
         </MenuItem>
         <MenuItem onClick={onCopyAtTime}>
           <ListItemIcon>
@@ -133,19 +150,27 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
           <ListItemText>Copy Video URL</ListItemText>
         </MenuItem>
         <Divider />
-        <MenuItem onClick={() => {onMove(0)}}>
+        <MenuItem
+          onClick={() => {
+            onMove(0);
+          }}
+        >
           <ListItemIcon>
             <VerticalAlignTopIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Move to Top</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => {onMove(1)}}>
+        <MenuItem
+          onClick={() => {
+            onMove(1);
+          }}
+        >
           <ListItemIcon>
             <VerticalAlignBottomIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Move to Bottom</ListItemText>
         </MenuItem>
-        {settings.ytdlp.host && (video.ytdlpComplete === -1) && (
+        {settings.ytdlp.host && video.ytdlpComplete === -1 && (
           <div>
             <Divider />
             <MenuItem onClick={onDownload}>
@@ -156,7 +181,18 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
             </MenuItem>
           </div>
         )}
+        {settings.ytdlp.host && video.ytdlpComplete === 1 && (
+          <div>
+            <Divider />
+            <MenuItem onClick={onOpenDownloaded}>
+              <ListItemIcon>
+                <FileOpenIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Open Downloaded Video</ListItemText>
+            </MenuItem>
+          </div>
+        )}
       </Menu>
     </>
-  )
+  );
 };

@@ -15,6 +15,7 @@
   },
   "scripts": {
     "start": "cross-env PORT=3000 react-scripts start",
+    "start:ssl": "cross-env HTTPS=true PORT=3000 react-scripts start",
     "forge:start": "electron-forge start",
     "build": "react-scripts build",
     "test": "react-scripts test",

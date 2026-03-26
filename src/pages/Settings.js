@@ -139,7 +139,7 @@ export default function Settings({ settings, saveSettings, }) {
               </FormControl>
             </Grid>
             <Grid item xs={12}>
-              <TextField fullWidth required label="yt-dlp Web UI Host" value={settings.ytdlp.host || ''} onFocus={e => { e.target.select() }} onChange={(e) => { onChange('ytdlp.host', e.target.value) }} />
+              <TextField fullWidth required label="YTPTube Host" value={settings.ytdlp.host || ''} onFocus={e => { e.target.select() }} onChange={(e) => { onChange('ytdlp.host', e.target.value) }} />
             </Grid>
           </Grid>
         </FormGroup>
