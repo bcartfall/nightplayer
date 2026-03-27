@@ -4,7 +4,7 @@
  * See README.md
  */
 
-import React, { useCallback, useContext, useState, } from 'react';
+import React, { useCallback, useContext, useState, useEffect, useImperativeHandle, forwardRef, } from 'react';
 import { Outlet, Link } from "react-router-dom";
 
 import { AppBar, Toolbar, Typography, useScrollTrigger, Box, Fab, Fade, IconButton, DialogActions, Button, DialogTitle, DialogContent, DialogContentText, TextField, Dialog, Snackbar, Alert, FormControlLabel, FormGroup, Checkbox, } from '@mui/material';
@@ -15,6 +15,7 @@ import AddLinkIcon from '@mui/icons-material/AddLink';
 
 import LayoutContext from '../contexts/LayoutContext';
 import VideosContext from '../contexts/VideosContext';
+import { isVideoUrl } from "../models/Video";
 
 function ScrollTop(props) {
   const { children, window } = props;
@@ -52,14 +53,65 @@ function ScrollTop(props) {
   );
 }
 
-export default function Layout(props) {
+const Layout = forwardRef((props, ref) => {
   const { title, error, snack, } = useContext(LayoutContext);
-  const { addVideoUrl } = useContext(VideosContext);
+  const { addVideoUrl, settings } = useContext(VideosContext);
   const [showAddVideo, setShowAddVideo] = useState(false);
   const [addUrl, setAddUrl] = useState('');
   const [hideControls, setHideControls] = useState(false);
   const [addBottom, setAddBottom] = useState(false);
+  const [downloadImmediately, setDownloadImmediately] = useState(false);
   const [showGettingVideo, setShowGettingVideo] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    // This is the method exposed to the parent
+    pasteUrl(url) {
+      setAddBottom(true);
+      setAddUrl(url);
+      setShowAddVideo(true);
+    }
+  }));
+
+  const pasteVideo = useCallback((url, addBottom) => {
+    setAddBottom(addBottom);
+    setAddUrl(url);
+    setShowAddVideo(true);
+  }, [setAddBottom, setAddUrl, setShowAddVideo]);
+
+  const onKeyDown = useCallback(
+    async (e) => {
+      console.log("onKeyDown", e);
+
+      const key = e.key.toUpperCase();
+
+      // Ctrl + V
+      if (e.ctrlKey && key === "V") {
+        const target = e.target;
+        if (target.tagName !== "BODY") {
+          // can only paste if focus on body
+          return;
+        }
+
+        // paste video url
+        const clipText = await navigator.clipboard.readText();
+        if (!isVideoUrl(clipText)) {
+          return;
+        }
+        const addBottom = !e.shiftKey; // Shift + Ctrl + V to paste to top
+        pasteVideo(clipText, addBottom);
+      }
+    },
+    [pasteVideo],
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", onKeyDown, true);
+
+    return async () => {
+      // remove event listeners
+      document.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [onKeyDown]);
 
   const onShowAddVideo = useCallback(() => {
     if (!showGettingVideo) {
@@ -77,11 +129,13 @@ export default function Layout(props) {
     e.preventDefault();
     setShowGettingVideo(true);
 
-    addVideoUrl({url: addUrl, controls: !hideControls, addBottom,}, () => {
+    addVideoUrl({url: addUrl, controls: !hideControls, addBottom, downloadImmediately, }, () => {
       setShowGettingVideo(false);
     });
     setShowAddVideo(false);
-  }, [addUrl, hideControls, addBottom, addVideoUrl]);
+    setAddUrl('');
+    setDownloadImmediately(false);
+  }, [addUrl, hideControls, addBottom, addVideoUrl, downloadImmediately]);
 
   const handleChange = useCallback((event) => {
     setAddUrl(event.target.value);
@@ -142,6 +196,7 @@ export default function Layout(props) {
               type="url"
               fullWidth
               variant="standard"
+              value={addUrl}
               onChange={handleChange}
             />
             <FormGroup>
@@ -150,6 +205,10 @@ export default function Layout(props) {
             <FormGroup>
               <FormControlLabel checked={addBottom} control={<Checkbox onChange={(e) => {setAddBottom(e.target.checked)}} />} label="Add to Bottom" />
             </FormGroup>
+            {settings?.ytdlp?.host &&
+            <FormGroup>
+              <FormControlLabel checked={downloadImmediately} control={<Checkbox onChange={(e) => {setDownloadImmediately(e.target.checked)}} />} label="Download Immediately" />
+            </FormGroup>}
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Cancel</Button>
@@ -177,4 +236,6 @@ export default function Layout(props) {
       </ScrollTop>
     </>
   );
-};
+});
+
+export default Layout;

@@ -42,6 +42,9 @@ export default function Player(props) {
   const [videoUrl, setVideoUrl] = useState("");
   const hasSeekedRef = useRef(false);
   const clickTimerRef = useRef(null);
+  const [isMouseVisible, setIsMouseVisible] = useState(true);
+  const hideTimeoutRef = useRef(null);
+  const INACTIVITY_TIMEOUT = 3000; // 3 seconds
 
   // get active video
   let { uuid } = useParams(); // get id from url (e.g. /player/:uuid)
@@ -77,6 +80,41 @@ export default function Player(props) {
     setPlaying(autoplayRef.current);
     autoplayRef.current = false; // don't autoplay next time video is loaded
   }, [uuid, videos, setVideo, setPlaying, autoplayRef, setNotFound]);
+
+  useEffect(() => {
+    const handleMouseMove = () => {
+      // Show cursor when movement is detected
+      setIsMouseVisible(true);
+
+      // Clear existing timer
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+
+      // Only start the "hide" timer if we are in fullscreen AND playing
+      if (document.fullscreenElement && playing) {
+        hideTimeoutRef.current = setTimeout(() => {
+          setIsMouseVisible(false);
+        }, INACTIVITY_TIMEOUT);
+      }
+    };
+
+    // Reset visibility if user exits fullscreen or pauses
+    if (!document.fullscreenElement || !playing) {
+      setIsMouseVisible(true);
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    }
+
+    window.addEventListener('mousemove', handleMouseMove);
+    // Also trigger on click to ensure visibility
+    window.addEventListener('mousedown', handleMouseMove);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mousedown', handleMouseMove);
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    };
+  }, [playing]); // Re-run logic when play/pause state changes
 
   useEffect(() => {
     const fetchUrl = async () => {
@@ -153,6 +191,11 @@ export default function Player(props) {
 
   const onKeyDown = useCallback(
     (e) => {
+      const hijackedKeys = [" ", "K", "F", "ARROWLEFT", "ARROWRIGHT", "N", "P"];
+      if (hijackedKeys.includes(e.key.toUpperCase())) {
+        e.stopImmediatePropagation(); // Stops other listeners on the same element
+      }
+
       //console.log('onKeyDown', e);
 
       const key = e.key.toUpperCase();
@@ -181,6 +224,10 @@ export default function Player(props) {
           return true;
         case " ":
         case "K":
+          if (e.ctrlKey) {
+            // do not handle
+            return true;
+          }
           e.preventDefault();
           // play / pause
           let message = playing ? "Pausing." : "Playing.";
@@ -477,7 +524,11 @@ export default function Player(props) {
                 >
                   <div
                     ref={playerContainerRef}
-                    style={{ width: "100%", height: "100%" }}
+                    style={{ 
+                      width: "100%", 
+                      height: "100%", 
+                      cursor: isMouseVisible ? 'default' : 'none' // Add this line
+                    }}
                     onClick={handleVideoClick}
                   >
                     <ReactPlayer

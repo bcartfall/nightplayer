@@ -161,7 +161,7 @@ class Video {
         return this.thumbnailUrl.replace('%{width}', width).replace('%{height}', height);
     }
 
-    getYtpId() {
+    getYtpArchiveId() {
         if (this.source === 'youtube') {
             return 'youtube ' + youtube_parser(this.url);
         } else if (this.source === 'twitch') {
@@ -277,6 +277,7 @@ class Video {
 
         this.ytdlpProgress = percentage * 0.01;
         this.ytdlpSpeed = item.speed;
+        this.ytdlpStatus = item.status;
         console.log(`progress = ${this.ytdlpProgress}, speed=${this.ytdlpSpeed}`);
 
         if (this.ytdlpComplete === 0) {

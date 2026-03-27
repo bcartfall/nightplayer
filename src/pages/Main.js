@@ -13,16 +13,11 @@ import Loading from '../components/Loading';
 import LayoutContext from '../contexts/LayoutContext';
 import VideosContext from '../contexts/VideosContext';
 
-import { isVideoUrl } from '../models/Video';
-
 export default function Main(props) {
   const { setTitle } = useContext(LayoutContext);
   const { loading, videos, changeVideoOrder } = useContext(VideosContext);
   const [dragVideo, setDragVideo] = useState(null);
   const [dragIndex, setDragIndex] = useState(null);
-
-  const { addVideoUrl, } = useContext(VideosContext);
-  const { setSnack } = useContext(LayoutContext);
 
   useEffect(() => {
     // change title
@@ -93,50 +88,6 @@ export default function Main(props) {
     //console.log('onDragLeave', e);
   }, []);
 
-  const onKeyDown = useCallback(async (e) => {
-    console.log('onKeyDown', e);
-
-    const key = e.key.toUpperCase();
-
-    // Ctrl + V
-    if (e.ctrlKey && key === 'V') {
-      const target = e.target;
-      if (target.tagName !== 'BODY') {
-        // can only paste if focus on body
-        return;
-      }
-      
-      const addBottom = !e.shiftKey; // Shift + Ctrl + V to paste to top
-
-      // paste video url
-      const clipText = await navigator.clipboard.readText();
-      if (!isVideoUrl(clipText)) {
-        return;
-      }
-  
-      addVideoUrl({url: clipText, addBottom});
-  
-      let snack = {
-        open: true,
-        message: 'Video added.',
-      };
-      setSnack(snack);
-  
-      setTimeout(() => {
-        setSnack({...snack, open: false});
-      }, 1000);
-    }
-  }, [setSnack, addVideoUrl,]);
-
-  useEffect(() => {
-    document.addEventListener('keydown', onKeyDown, true);
-
-    return async () => {
-      // remove event listeners
-      document.removeEventListener('keydown', onKeyDown, true);
-    };
-  }, [onKeyDown,]);
-  
   return (
     <div className="page">
       {loading && (

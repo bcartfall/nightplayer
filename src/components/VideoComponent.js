@@ -20,6 +20,14 @@ const humanFileSize = (size) => {
   return (size / Math.pow(1024, i)).toFixed(2) + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
 };
 
+const speedChipValue = (video) => {
+  if (video.ytdlpSpeed && video.ytdlpSpeed > 0) {
+    return humanFileSize(video.ytdlpSpeed) + '/s'
+  } else {
+    return video.ytdlpStatus ?? 'Unknown';
+  }
+};
+
 export default function VideoComponent({ video, index, dragIndex, dragDirection, onDragStart, onDragEnd, onDragEnter, onDragLeave, }) {
   const navigate = useNavigate();
   const [contextMenu, setContextMenu] = useState(null);
@@ -122,7 +130,7 @@ export default function VideoComponent({ video, index, dragIndex, dragDirection,
             {video.ytdlpComplete === 0 &&
               <FileDownloadIcon fontSize="small" sx={{ position: 'absolute', left: '10px', top: '10px' }} />}
             {video.ytdlpComplete === 0 &&
-              <Chip label={humanFileSize(video.ytdlpSpeed) + '/s'} variant="outlined" sx={{ position: 'absolute', left: '32px', top: '10px' }} />}
+              <Chip label={speedChipValue(video)} variant="outlined" sx={{ position: 'absolute', left: '32px', top: '10px' }} />}
             {video.ytdlpComplete === 1 &&
               <DownloadDoneIcon fontSize="small" sx={{ position: 'absolute', left: '10px', top: '10px' }} />}
 
