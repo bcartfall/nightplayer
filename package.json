@@ -1,6 +1,6 @@
 {
   "name": "nightplayer",
-  "version": "0.9.21",
+  "version": "0.9.22",
   "private": true,
   "main": "public/electron.js",
   "homepage": "https://bcartfall.github.io/nightplayer",
