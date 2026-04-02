@@ -8,8 +8,7 @@ import { createContext } from 'react';
 
 export default createContext({
     video: null, // current video
-    playing: false,
-    setPlaying: () => {},
+    playing: null,
     showJumpToTime: () => {},
     showLog: () => {},
 });

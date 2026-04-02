@@ -85,6 +85,7 @@ class Video {
 
         this.position = props.position ?? (t ? parseStringTime(t) : 0);
         this.duration = props.duration ?? 0;
+        this.volume = props.volume ?? 1;
         this.thumbnailUrl = props.thumbnailUrl ?? null;
         this.title = props.title ?? null;
         this.description = props.description ?? null;
@@ -105,6 +106,7 @@ class Video {
             source: this.source,
             position: this.position,
             duration: this.duration,
+            volume: this.volume,
             thumbnailUrl: this.thumbnailUrl,
             title: this.title,
             description: this.description,

@@ -33,7 +33,8 @@ export default function Player(props) {
   const playerRef = useRef(null);
   const playerContainerRef = useRef(null);
   const [snack, setSnack] = useState({ open: false, message: "" });
-  const [playing, setPlaying] = useState(false);
+  const playing = useRef(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const lastSaveRef = useRef(0);
   const [contextMenu, setContextMenu] = useState(null);
   const [jumpDialog, setJumpDialog] = useState({ open: false });
@@ -42,9 +43,22 @@ export default function Player(props) {
   const [videoUrl, setVideoUrl] = useState("");
   const hasSeekedRef = useRef(false);
   const clickTimerRef = useRef(null);
-  const [isMouseVisible, setIsMouseVisible] = useState(true);
+  const [mouseVisible, setMouseVisible] = useState(true);
+  const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimeoutRef = useRef(null);
   const INACTIVITY_TIMEOUT = 3000; // 3 seconds
+  const hostedLocal = useRef(false);
+
+  // Custom controls state (used when hostedLocal.current === true)
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const [played, setPlayed] = useState(0);       // 0–1 fraction
+  const [buffered, setBuffered] = useState(0);   // 0–1 fraction
+  const [duration, setDuration] = useState(0);
+  const progressBarRef = useRef(null);
+  const fullscreen = useRef(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const snackTimeoutRef = useRef(null);
 
   // get active video
   let { uuid } = useParams(); // get id from url (e.g. /player/:uuid)
@@ -58,6 +72,23 @@ export default function Player(props) {
       setTitle(video.title ?? "Video Title Not Found");
     }
   }, [setTitle, video]);
+
+  const updatePlaying = useCallback((state) => {
+    playing.current = state;
+    setIsPlaying(state);
+  }, [setIsPlaying]);
+
+  const showSnack = useCallback((message) => {
+    setSnack({ open: true, message });
+
+    if (snackTimeoutRef.current) {
+      clearTimeout(snackTimeoutRef.current);
+    }
+    snackTimeoutRef.current = setTimeout(() => {
+      setSnack({ open: false, message });
+      snackTimeoutRef.current = null;
+    }, 500);
+  }, [snackTimeoutRef]);
 
   useEffect(() => {
     // set current video
@@ -77,44 +108,56 @@ export default function Player(props) {
     }
     hasSeekedRef.current = false;
 
-    setPlaying(autoplayRef.current);
+    updatePlaying(autoplayRef.current);
     autoplayRef.current = false; // don't autoplay next time video is loaded
-  }, [uuid, videos, setVideo, setPlaying, autoplayRef, setNotFound]);
+  }, [uuid, videos, setVideo, autoplayRef, setNotFound, updatePlaying]);
+
+  useEffect(() => {
+    hostedLocal.current = (settings?.ytdlp.host && video?.ytdlpComplete === 1);
+  }, [video, settings]);
+
+  const hideMouse = useCallback((playingOverride = null) => {
+    // Clear existing timer
+    if (hideTimeoutRef.current) {
+      // console.log("clearTimeout hideTimeoutRef");
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+
+    // Only start the "hide" timer if we are in fullscreen AND playing
+    const isPlaying = playingOverride !== null ? playingOverride : playing.current;
+    // console.log("hideMouse", fullscreen.current, playing.current, isPlaying);
+    if (fullscreen.current && isPlaying) {
+      hideTimeoutRef.current = setTimeout(() => {
+        // console.log("setMouseVisible false");
+        setMouseVisible(false);
+        setControlsVisible(false);
+      }, INACTIVITY_TIMEOUT);
+    }
+  }, [playing, fullscreen]);
 
   useEffect(() => {
     const handleMouseMove = () => {
       // Show cursor when movement is detected
-      setIsMouseVisible(true);
-
-      // Clear existing timer
-      if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current);
-      }
-
-      // Only start the "hide" timer if we are in fullscreen AND playing
-      if (document.fullscreenElement && playing) {
-        hideTimeoutRef.current = setTimeout(() => {
-          setIsMouseVisible(false);
-        }, INACTIVITY_TIMEOUT);
-      }
+      setMouseVisible(true);
+      setControlsVisible(true);
+      hideMouse();
     };
 
-    // Reset visibility if user exits fullscreen or pauses
-    if (!document.fullscreenElement || !playing) {
-      setIsMouseVisible(true);
-      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-    }
-
+    window.addEventListener('keydown', handleMouseMove);
     window.addEventListener('mousemove', handleMouseMove);
-    // Also trigger on click to ensure visibility
     window.addEventListener('mousedown', handleMouseMove);
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('keydown', handleMouseMove);
       window.removeEventListener('mousedown', handleMouseMove);
-      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
     };
-  }, [playing]); // Re-run logic when play/pause state changes
+  }, [hideMouse]);
 
   useEffect(() => {
     const fetchUrl = async () => {
@@ -125,7 +168,7 @@ export default function Player(props) {
       }
 
       // 2. Perform your logic
-      if (settings.ytdlp.host && video.ytdlpComplete === 1) {
+      if (hostedLocal.current) {
         const url = await video.getYtpUrl(settings);
         setVideoUrl(url);
       } else {
@@ -134,7 +177,7 @@ export default function Player(props) {
     };
 
     fetchUrl();
-  }, [video, settings]); // Re-run whenever video or settings change
+  }, [video, settings, hostedLocal]); // Re-run whenever video or settings change
 
   const saveProgress = useCallback(
     (source) => {
@@ -171,7 +214,7 @@ export default function Player(props) {
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       // enter fullscreen
-      if (settings.ytdlp.host && video?.ytdlpComplete === 1) {
+      if (hostedLocal.current) {
         // locally hosted
         playerContainerRef.current.requestFullscreen();
       } else {
@@ -182,40 +225,60 @@ export default function Player(props) {
         iframe.focus();
         iframe.requestFullscreen();
       }
+      fullscreen.current = true;
+      setIsFullscreen(true);
       // 
     } else {
       // exit fullscreen
       document.exitFullscreen();
+      fullscreen.current = false;
+      setIsFullscreen(false);
     }
-  }, [playerRef, settings, video]);
+    hideMouse();
+  }, [playerRef, hostedLocal, fullscreen, hideMouse, setIsFullscreen]);
 
   const onKeyDown = useCallback(
     (e) => {
-      const hijackedKeys = [" ", "K", "F", "ARROWLEFT", "ARROWRIGHT", "N", "P"];
+      const hijackedKeys = [" ", "K", "F", "ARROWLEFT", "ARROWRIGHT", "ARROWDOWN", "ARROWUP", "N", "P"];
       if (hijackedKeys.includes(e.key.toUpperCase())) {
         e.stopImmediatePropagation(); // Stops other listeners on the same element
+        setMouseVisible(true);
+        setControlsVisible(true);
+        hideMouse();
       }
 
-      //console.log('onKeyDown', e);
+      // console.log('onKeyDown', e);
 
       const key = e.key.toUpperCase();
       switch (key) {
         case "ARROWLEFT":
           e.preventDefault();
           seekPosition.current -= 5;
-          setSnack({
-            open: true,
-            message: `Seeking ${seekPosition.current} seconds.`,
-          });
+          showSnack(`Seeking ${seekPosition.current} seconds.`);
           return true;
         case "ARROWRIGHT":
           e.preventDefault();
           seekPosition.current += 5;
-          setSnack({
-            open: true,
-            message: `Seeking +${seekPosition.current} seconds.`,
-          });
+          showSnack(`Seeking +${seekPosition.current} seconds.`);
           return true;
+        case "ARROWDOWN":
+          if (fullscreen.current) {
+            e.preventDefault();
+            const v = Math.max(0, volume - 0.05);
+            setVolume(v);
+            showSnack(`Volume ${Math.round(v * 100)}%`);
+            return true;
+          }
+          break;
+        case "ARROWUP":
+          if (fullscreen.current) {
+            e.preventDefault();
+            const v = Math.min(1, volume + 0.05);
+            setVolume(v);
+            showSnack(`Volume ${Math.round(v * 100)}%`);
+            return true;
+          }
+          break;
         case "F":
           // fullscreen
           e.preventDefault();
@@ -230,12 +293,11 @@ export default function Player(props) {
           }
           e.preventDefault();
           // play / pause
-          let message = playing ? "Pausing." : "Playing.";
-          setSnack({ open: true, message });
-          setPlaying(!playing);
-          setTimeout(() => {
-            setSnack({ open: false, message });
-          }, 500);
+          let message = playing.current ? "Pausing." : "Playing.";
+          showSnack(message);
+          const state = !playing.current;
+          updatePlaying(state);
+
           return true;
         default:
       }
@@ -252,7 +314,7 @@ export default function Player(props) {
         }
       }
     },
-    [playing, setPlaying, seekPosition, setSnack, skip, toggleFullscreen],
+    [playing, seekPosition, skip, toggleFullscreen, hideMouse, updatePlaying, setMouseVisible, setControlsVisible, volume, showSnack],
   );
 
   const onKeyUp = useCallback(() => {
@@ -265,12 +327,9 @@ export default function Player(props) {
       );
       
       playerRef.current?.seekTo(Math.min(currentTime + seekPosition.current, playerRef.current?.getDuration() - 1), "seconds");
-      setTimeout(() => {
-        setSnack({ ...snack, open: false });
-      }, 500);
     }
     seekPosition.current = 0;
-  }, [seekPosition, playerRef, snack, setSnack]);
+  }, [seekPosition, playerRef, ]);
 
   const chooseBestQuality = useCallback(() => {
     if (video.source === "twitch") {
@@ -329,15 +388,20 @@ export default function Player(props) {
     };
   }, [saveProgress, loading]);
 
-  const onProgress = useCallback(() => {
+  const onProgress = useCallback((state) => {
     // save video position
     if (playerRef.current) {
-      //console.log('onProgress', playerRef.current.getCurrentTime());
       const time = playerRef.current.getCurrentTime();
       if (time !== video.position) {
         updateLastAction();
         video.position = time;
       }
+    }
+
+    // Update custom-controls state
+    if (state) {
+      setPlayed(state.played ?? 0);
+      setBuffered(state.loaded ?? 0);
     }
 
     // save to DB every 10s or on pause
@@ -351,11 +415,13 @@ export default function Player(props) {
       console.log("onReady", event);
       if (!hasSeekedRef.current && video) {
         console.log(`Resuming playback at ${video.position}.`);
+        setPlayed(video.position / video.duration);
+        setVolume(video.volume);
         playerRef.current.seekTo(video.position, "seconds");
         hasSeekedRef.current = true;
       }
 
-      if (!settings.ytdlp.host || video?.ytdlpComplete !== 1) {
+      if (!hostedLocal.current) {
         if (video.source === "twitch") {
           const player = playerRef.current.getInternalPlayer();
           // wait for qualities to populate
@@ -373,7 +439,7 @@ export default function Player(props) {
 
       lastSaveRef.current = Date.now();
     },
-    [video, chooseBestQuality, playerRef, settings],
+    [video, chooseBestQuality, playerRef, hostedLocal],
   );
 
   const onPlay = useCallback(() => {
@@ -383,6 +449,10 @@ export default function Player(props) {
   }, [playerRef, video]);
 
   const onSeek = useCallback((seconds) => {}, []);
+
+  const onDuration = useCallback((d) => {
+    setDuration(d);
+  }, []);
 
   const onPause = useCallback(() => {
     if (playerRef.current) {
@@ -473,28 +543,77 @@ export default function Player(props) {
     setContextMenu(null);
   };
 
-  const handleVideoClick = (e) => {
-  // Guard clause
-  if (!settings.ytdlp.host || video?.ytdlpComplete !== 1) {
-    return;
-  }
-
-  if (e.detail === 1) {
-    // Start a timer for the single click action (250ms is standard for double-click detection)
-    clickTimerRef.current = setTimeout(() => {
-      setPlaying((prev) => !prev);
-      clickTimerRef.current = null;
-    }, 250);
-  } else if (e.detail === 2) {
-    // If a second click happens, clear the pending single-click timer
-    if (clickTimerRef.current) {
-      clearTimeout(clickTimerRef.current);
-      clickTimerRef.current = null;
+  const handleVideoClick = useCallback((e) => {
+    if (!hostedLocal.current) {
+      return;
     }
-    // Perform fullscreen instead
-    toggleFullscreen();
-  }
-};
+
+    if (e.detail === 1) {
+      // Start a timer for the single click action (250ms is standard for double-click detection)
+      clickTimerRef.current = setTimeout(() => {
+        updatePlaying(!playing.current);
+        hideMouse();
+        clickTimerRef.current = null;
+      }, 250);
+    } else if (e.detail === 2) {
+      // If a second click happens, clear the pending single-click timer
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = null;
+      }
+      // Perform fullscreen instead
+      toggleFullscreen();
+    }
+  }, [toggleFullscreen, playing, clickTimerRef, hideMouse, updatePlaying]);
+
+  const formatTime = (secs) => {
+    if (!secs || isNaN(secs)) return '0:00';
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = Math.floor(secs % 60);
+    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
+
+  const handleProgressClick = (e) => {
+    if (!progressBarRef.current) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    playerRef.current?.seekTo(fraction, 'fraction');
+    setPlayed(fraction);
+  };
+
+  const handleVolumeChange = (e) => {
+    const v = parseFloat(e.target.value);
+    console.log("setVolume", v);
+    setVolume(v);
+    setMuted(v === 0);
+    video.volume = v;
+  };
+
+  const toggleMute = () => {
+    setMuted((prev) => !prev);
+  };
+
+  // SVG icon helpers
+  const PlayIcon = () => (
+    <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M8 5v14l11-7z"/></svg>
+  );
+  const PauseIcon = () => (
+    <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+  );
+  const VolumeHighIcon = () => (
+    <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+  );
+  const VolumeMuteIcon = () => (
+    <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+  );
+  const FullscreenIcon = () => (
+    <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+  );
+  const FullscreenExitIcon = () => (
+    <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+  );
 
   if (loading || (!video && !notFound)) {
     return <Loading style={{ paddingTop: "50px" }} />;
@@ -502,7 +621,7 @@ export default function Player(props) {
 
   return (
     <PlayerContext.Provider
-      value={{ video, playing, setPlaying, showJumpToTime, showLog }}
+      value={{ video, playing, showJumpToTime, showLog }}
     >
       <div
         key={`player-page-${video ? video.uuid : "none"}`}
@@ -527,25 +646,140 @@ export default function Player(props) {
                     style={{ 
                       width: "100%", 
                       height: "100%", 
-                      cursor: isMouseVisible ? 'default' : 'none' // Add this line
+                      cursor: mouseVisible ? 'default' : 'none',
+                      position: 'relative',
                     }}
                     onClick={handleVideoClick}
                   >
                     <ReactPlayer
                       ref={playerRef}
                       url={videoUrl}
-                      playing={playing}
-                      controls={!!video.controls}
+                      playing={isPlaying}
+                      controls={!!video.controls && !hostedLocal.current}
+                      volume={volume}
+                      muted={muted}
                       onReady={onReady}
                       onPlay={onPlay}
                       onSeek={onSeek}
                       onPause={onPause}
                       onProgress={onProgress}
-                      progressInterval={1000}
+                      onDuration={onDuration}
+                      progressInterval={42}
                       width="100%"
                       height="100%"
                       loop={false}
                     />
+
+                    {hostedLocal.current && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          background: 'linear-gradient(transparent, rgba(0,0,0,0.85))',
+                          padding: '24px 12px 10px',
+                          opacity: video.controls && controlsVisible ? 1 : 0,
+                          transition: 'opacity 0.25s ease',
+                          pointerEvents: video.controls && controlsVisible ? 'auto' : 'none',
+                          userSelect: 'none',
+                        }}
+                      >
+                        {/* Progress bar */}
+                        <div
+                          ref={progressBarRef}
+                          onClick={handleProgressClick}
+                          style={{
+                            position: 'relative',
+                            height: '4px',
+                            borderRadius: '2px',
+                            background: 'rgba(255,255,255,0.25)',
+                            cursor: 'pointer',
+                            marginBottom: '8px',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.height = '6px'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.height = '4px'; }}
+                        >
+                          {/* Buffered */}
+                          <div style={{
+                            position: 'absolute', top: 0, left: 0, bottom: 0,
+                            width: `${buffered * 100}%`,
+                            background: 'rgba(255,255,255,0.4)',
+                            borderRadius: '2px',
+                            pointerEvents: 'none',
+                          }} />
+                          {/* Played */}
+                          <div style={{
+                            position: 'absolute', top: 0, left: 0, bottom: 0,
+                            width: `${played * 100}%`,
+                            background: '#ff0000',
+                            borderRadius: '2px',
+                            pointerEvents: 'none',
+                          }} />
+                          {/* Scrubber dot */}
+                          <div style={{
+                            position: 'absolute', top: '50%',
+                            left: `${played * 100}%`,
+                            transform: 'translate(-50%, -50%)',
+                            width: '12px', height: '12px',
+                            background: '#ff0000',
+                            borderRadius: '50%',
+                            pointerEvents: 'none',
+                          }} />
+                        </div>
+
+                        {/* Bottom row */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {/* Play / Pause */}
+                          <button
+                            onClick={() => { updatePlaying(!playing.current); }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}
+                            title={playing.current ? 'Pause (k)' : 'Play (k)'}
+                          >
+                            {playing.current ? <PauseIcon /> : <PlayIcon />}
+                          </button>
+
+                          {/* Volume */}
+                          <button
+                            onClick={toggleMute}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}
+                            title={muted ? 'Unmute' : 'Mute'}
+                          >
+                            {muted || volume === 0 ? <VolumeMuteIcon /> : <VolumeHighIcon />}
+                          </button>
+                          <input
+                            type="range"
+                            min={0} max={1} step={0.02}
+                            value={muted ? 0 : volume}
+                            onChange={handleVolumeChange}
+                            style={{
+                              width: '72px',
+                              accentColor: '#fff',
+                              cursor: 'pointer',
+                            }}
+                          />
+
+                          {/* Time */}
+                          <span style={{ color: '#fff', fontSize: '13px', fontFamily: 'Roboto, sans-serif', marginLeft: '4px' }}>
+                            {formatTime(played * duration)} / {formatTime(duration)}
+                          </span>
+
+                          {/* Spacer */}
+                          <div style={{ flex: 1 }} />
+
+                          {/* Fullscreen */}
+                          <button
+                            onClick={toggleFullscreen}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}
+                            title="Fullscreen (f)"
+                          >
+                            {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <Snackbar
                       anchorOrigin={{ vertical: "top", horizontal: "right" }}
                       open={snack.open}
@@ -564,7 +798,6 @@ export default function Player(props) {
                       fontSize: "1.2rem",
                     }}
                   >
-                    {video.title}
                   </Typography>
                 </Box>
                 {video.description && (
