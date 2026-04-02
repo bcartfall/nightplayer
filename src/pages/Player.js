@@ -297,6 +297,7 @@ export default function Player(props) {
           showSnack(message);
           const state = !playing.current;
           updatePlaying(state);
+          hideMouse(state);
 
           return true;
         default:
@@ -551,8 +552,9 @@ export default function Player(props) {
     if (e.detail === 1) {
       // Start a timer for the single click action (250ms is standard for double-click detection)
       clickTimerRef.current = setTimeout(() => {
-        updatePlaying(!playing.current);
-        hideMouse();
+        const state = !playing.current;
+        updatePlaying(state);
+        hideMouse(state);
         clickTimerRef.current = null;
       }, 250);
     } else if (e.detail === 2) {
