@@ -10,4 +10,5 @@ export default createContext({
     title: 'Night Player',
     setTitle: () => {},
     error: '',
+    setError: () => {},
 });

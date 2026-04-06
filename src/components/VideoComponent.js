@@ -120,7 +120,7 @@ export default function VideoComponent({ video, index, dragIndex, dragDirection,
               <CardMedia
               sx={{ aspectRatio: '16 /9', objectFit: 'cover', overflow: 'hidden', }}
                 component="img"
-                image={video.getThumbnailUrl(480, 270)}
+                image={video.getThumbnailUrl()}
                 alt={video.title}
               />
               <Box sx={{ position: 'absolute', right: 8, bottom: 8, fontSize: '0.8rem', borderRadius: 2, backgroundColor: 'black', p: 0.25, pl: 0.75, pr: 0.75 }}>{duration}</Box>

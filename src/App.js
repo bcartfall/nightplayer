@@ -61,7 +61,13 @@ export default function App(props) {
       console.log('loadVideos', result);
       let cVideos = [];
       for (const i in result) {
+        const originalSchemaVersion = result[i].schemaVersion ?? null;
+        result[i] = await Video.migrate(result[i]);
         const aVideo = new Video(result[i]);
+        if (aVideo.schemaVersion !== originalSchemaVersion) {
+          console.log(originalSchemaVersion, aVideo.schemaVersion);
+          aVideo.save(true);
+        }
         cVideos.push(aVideo);
       }
 
@@ -138,7 +144,7 @@ export default function App(props) {
 
     // check if video url already exists
     let page = 1;
-    let archiveId = video.getYtpArchiveId();
+    let archiveId = video.getArchiveId();
     let ytdItem = null;
     while (true) {
       const responseHistory = await fetch(
@@ -185,7 +191,7 @@ export default function App(props) {
       },
       body: JSON.stringify({
         preset: "default",
-        items: [video.getYtpArchiveId()],
+        items: [video.getArchiveId()],
       }),
     });
     const responseDataArchive = await responseArchive.json();
@@ -259,72 +265,89 @@ export default function App(props) {
   }, [settings]);
 
   const addVideoUrl = useCallback(async (props, callback) => {
-    // add video by url
-    const defaultProps = {
-      url: null,
-      controls: true,
-      addBottom: true,
-      downloadImmediately: false,
-    };
-    const {
-      url,
-      controls,
-      addBottom,
-      downloadImmediately,
-    } = { ...defaultProps, ...props };
-    const video = new Video({url, controls,});
-
-    // set order to the last video + 1
-    let nVideos;
-    if (videos.length > 0 && addBottom) {
-      // add video to bottom
-      video.order = videos[videos.length - 1].order + 1;
-      nVideos = [...videos, video];
-    } else {
-      // add video to top
-      video.order = 0; // this will be saved later
-      nVideos = [video, ...videos];
-      for (let i in videos) {
-        i = parseInt(i, 10);
-        const tVideo = videos[i];
-        tVideo.order = i + 1;
-        await tVideo.save(true);
-      }
-    }
-
-    // get video information
     try {
-      await video.loadRemoteData(settings);
+      // add video by url
+      const defaultProps = {
+        url: null,
+        controls: true,
+        addBottom: true,
+        downloadImmediately: true,
+      };
+      const {
+        url,
+        controls,
+        addBottom,
+        downloadImmediately,
+      } = { ...defaultProps, ...props };
+
+      const video = new Video({url, controls,});
+
+      // check if video is on list already
+      const archiveId = video.getArchiveId();
+
+      for (let iVideo of videos) {
+        if (iVideo.getArchiveId() === archiveId) {
+          throw new Error("Video is already in list.");
+        }
+      }
+
+      // set order to the last video + 1
+      let nVideos;
+      if (videos.length > 0 && addBottom) {
+        // add video to bottom
+        video.order = videos[videos.length - 1].order + 1;
+        nVideos = [...videos, video];
+      } else {
+        // add video to top
+        video.order = 0; // this will be saved later
+        nVideos = [video, ...videos];
+        for (let i in videos) {
+          i = parseInt(i, 10);
+          const tVideo = videos[i];
+          tVideo.order = i + 1;
+          await tVideo.save(true);
+        }
+      }
+
+      // get video information
+      try {
+        await video.loadRemoteData(settings);
+      } catch (e) {
+        console.error(e);
+        setError(e.toString());
+        if (callback) {
+          callback(null);
+        }
+        return false;
+      }
+
+      setVideos(nVideos);
+
+      // save video to DB
+      console.log('Storing video', video);
+      await video.save();
+      console.log('Done storing.');
+
+      // download immediately
+      if (downloadImmediately) {
+        await downloadVideo(video);
+      }
+
+      if (callback) {
+        callback(video);
+      }
+
+      // save number of videos so we can show placeholder
+      localStorage.setItem('number_of_videos', nVideos.length);
+
+      // add to log
+      await video.log('create', {url,});
     } catch (e) {
-      console.error(e);
       setError(e.toString());
       if (callback) {
         callback(null);
       }
-      return false;
     }
-
-    setVideos(nVideos);
-
-    // save video to DB
-    console.log('Storing video', video);
-    await video.save();
-    console.log('Done storing.');
-
-    // download immediately
-    if (downloadImmediately) {
-      await downloadVideo(video);
-    }
-
-    if (callback) {
-      callback(video);
-    }
-
-    // save number of videos so we can show placeholder
-    localStorage.setItem('number_of_videos', nVideos.length);
-
-    // add to log
-    await video.log('create', {url,});
   }, [videos, setVideos, settings, downloadVideo]);
 
   const saveVideo = useCallback(async (video, callback = null, force = false) => {
@@ -392,7 +415,7 @@ export default function App(props) {
     };
     fetchDB();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videos,]);
+  }, []);
 
   const changeVideoOrder = useCallback((changeVideo, fromIndex, toIndex) => {
     let nVideos = [...videos];
@@ -580,7 +603,7 @@ export default function App(props) {
 
   return (
     <ThemeProvider theme={darkTheme}>
-      <LayoutContext.Provider value={{ title, setTitle, error, snack, setSnack, }}>
+      <LayoutContext.Provider value={{ title, setTitle, error, setError, snack, setSnack, }}>
         <VideosContext.Provider value={{ videos, settings, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, downloadVideo, openDownloadedVideo, loading, updateLastAction, autoplayRef, }}>
           <CssBaseline />
           <div className="app" id="app" onDrop={onDrop} onDragEnter={onDragEnter} onDragOver={(e) => e.preventDefault()} onDragLeave={onDragLeave} onMouseMove={onMouseMove} onKeyUp={onKeyUp} onClick={onClick} onContextMenu={handleContextMenu}>

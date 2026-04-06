@@ -70,6 +70,7 @@ function YTDurationToSeconds(duration) {
 class Video {
     constructor(props) {
         this.uuid = props.uuid ?? uuidv4();
+        this.schemaVersion = props.schemaVersion ?? null;
         this.order = parseInt(props.order ?? -1, 10);
         this.url = props.url;
 
@@ -86,7 +87,7 @@ class Video {
         this.position = props.position ?? (t ? parseStringTime(t) : 0);
         this.duration = props.duration ?? 0;
         this.volume = props.volume ?? 1;
-        this.thumbnailUrl = props.thumbnailUrl ?? null;
+        this.thumbnail = props.thumbnail ?? null;
         this.title = props.title ?? null;
         this.description = props.description ?? null;
         this.controls = props.controls ?? true;
@@ -101,13 +102,14 @@ class Video {
     toObject() {
         return {
             uuid: this.uuid,
+            schemaVersion: this.schemaVersion,
             order: this.order,
             url: this.url,
             source: this.source,
             position: this.position,
             duration: this.duration,
             volume: this.volume,
-            thumbnailUrl: this.thumbnailUrl,
+            thumbnail: this.thumbnail,
             title: this.title,
             description: this.description,
             controls: this.controls,
@@ -156,14 +158,15 @@ class Video {
         return this.url + (this.url.includes('?') ? '&' : '?') + 't=' + Math.round(this.position);
     }
 
-    getThumbnailUrl(width, height) {
-        if (!this.thumbnailUrl) {
+    getThumbnailUrl() {
+        if (!this.thumbnail) {
             return '';
         }
-        return this.thumbnailUrl.replace('%{width}', width).replace('%{height}', height);
+
+        return this.thumbnail.base64;
     }
 
-    getYtpArchiveId() {
+    getArchiveId() {
         if (this.source === 'youtube') {
             return 'youtube ' + youtube_parser(this.url);
         } else if (this.source === 'twitch') {
@@ -198,6 +201,7 @@ class Video {
      * Load data about video from youtube/twitch such as thumbnail, description, etc...
      */
     async loadRemoteData(settings) {
+        let thumbnailUrl;
         if (this.source === 'youtube') {
             // youtube
             console.log('Getting youtube information.');
@@ -218,7 +222,7 @@ class Video {
             this.url = `https://www.youtube.com/watch?v=${json.items[0].id}`;
             this.title = json.items[0].snippet.title;
             this.description = json.items[0].snippet.description;
-            this.thumbnailUrl = json.items[0].snippet.thumbnails.standard.url;
+            thumbnailUrl = json.items[0].snippet.thumbnails.standard.url;
             this.duration = YTDurationToSeconds(json.items[0].contentDetails.duration);
         } else if (this.source === 'twitch') {
             // twitch
@@ -234,12 +238,14 @@ class Video {
             this.url = json.data[0].url;
             this.title = json.data[0].title;
             this.description = json.data[0].description;
-            this.thumbnailUrl = json.data[0].thumbnail_url;
+            thumbnailUrl = json.data[0].thumbnail_url;
 
             // parse twitch duration // 1h22m28s
             this.duration = parseStringTime(json.data[0].duration);
             console.log(this);
         }
+
+        this.thumbnail = await Video.fetchThumbnail(thumbnailUrl);
     }
 
     async updateDownloadProgress(settings) {
@@ -288,6 +294,49 @@ class Video {
                 this.updateDownloadProgress(settings);
             }, 1000);
         }
+    }
+
+    static async fetchThumbnail(thumbnailUrl) {
+        console.log(`Fetching thumbnail url=${thumbnailUrl}`);
+        try {
+            thumbnailUrl = thumbnailUrl.replace('%{width}', 853).replace('%{height}', 480);
+            const response = await fetch(thumbnailUrl);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch image: ${response.statusText}`);
+            }
+
+            // 1. Get the response data as a Blob
+            const imageBlob = await response.blob();
+
+            const base64 = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(imageBlob);
+            });
+
+           return {
+                url: thumbnailUrl,
+                base64,
+            };
+        } catch (error) {
+            console.error("Error fetching thumbnail bytes:", error);
+            return null;
+        }
+    }
+
+    static async migrate(object) {
+        // run migrations of old data here
+        if ((object.schemaVersion ?? null) !== "2026-04-06") {
+            console.log(`Migrating ${object.uuid}, schemaVersion=${object.schemaVersion} ➡️ 2026-04-06`);
+            if (object.thumbnailUrl) {
+                // 2026-04-06: thumbnail is now stored as base64 in DB
+                object.thumbnail = await this.fetchThumbnail(object.thumbnailUrl);
+                delete object.thumbnailUrl;
+            }
+        }
+        object.schemaVersion = "2026-04-06";
+        return object;
     }
 };
 

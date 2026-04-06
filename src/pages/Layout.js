@@ -16,6 +16,8 @@ import AddLinkIcon from '@mui/icons-material/AddLink';
 import LayoutContext from '../contexts/LayoutContext';
 import VideosContext from '../contexts/VideosContext';
 import { isVideoUrl } from "../models/Video";
+import { Close } from '@mui/icons-material';
+
 
 function ScrollTop(props) {
   const { children, window } = props;
@@ -54,13 +56,13 @@ function ScrollTop(props) {
 }
 
 const Layout = forwardRef((props, ref) => {
-  const { title, error, snack, } = useContext(LayoutContext);
+  const { title, error, setError, snack, } = useContext(LayoutContext);
   const { addVideoUrl, settings } = useContext(VideosContext);
   const [showAddVideo, setShowAddVideo] = useState(false);
   const [addUrl, setAddUrl] = useState('');
   const [hideControls, setHideControls] = useState(false);
   const [addBottom, setAddBottom] = useState(false);
-  const [downloadImmediately, setDownloadImmediately] = useState(false);
+  const [downloadImmediately, setDownloadImmediately] = useState(true);
   const [showGettingVideo, setShowGettingVideo] = useState(false);
 
   useImperativeHandle(ref, () => ({
@@ -134,7 +136,7 @@ const Layout = forwardRef((props, ref) => {
     });
     setShowAddVideo(false);
     setAddUrl('');
-    setDownloadImmediately(false);
+    setDownloadImmediately(true);
   }, [addUrl, hideControls, addBottom, addVideoUrl, downloadImmediately]);
 
   const handleChange = useCallback((event) => {
@@ -176,7 +178,19 @@ const Layout = forwardRef((props, ref) => {
       </AppBar>
       <Toolbar id="back-to-top-anchor" />
       {error && (
-        <Alert severity="error">
+        <Alert
+          severity="error"
+          action={
+            <IconButton
+              aria-label="close"
+              color="inherit"
+              size="small"
+              onClick={() => setError(false)}
+            >
+              <Close fontSize="inherit" />
+            </IconButton>
+          }
+        >
           { error }
         </Alert>
       )}
