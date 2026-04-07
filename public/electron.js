@@ -16,9 +16,9 @@ app.commandLine.appendSwitch('disable-smooth-scrolling', 'true');
 
 function createWindow() {
   // no menu
-  if (!isDev) {
+  // if (!isDev) {
     Menu.setApplicationMenu(null);
-  }
+  // }
 
   // manage win state from store
   const getWinState = () => {
@@ -70,9 +70,9 @@ function createWindow() {
       : `file://${path.join(__dirname, '../build/index.html')}`
   );
   // Open the DevTools.
-  if (isDev) {
+  // if (isDev) {
     win.webContents.openDevTools({ mode: 'detach' });
-  }
+  // }
 
   win.on('close', (e) => {
     win.webContents.send('webcontents-app-before-close');

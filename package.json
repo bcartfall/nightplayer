@@ -34,15 +34,6 @@
     "make": "react-scripts build && electron-forge make",
     "publish": "electron-forge publish"
   },
-  "build": {
-    "mac": {
-      "icon": "build/icon.icns",
-      "target": [
-        "dmg",
-        "zip"
-      ]
-    }
-  },
   "eslintConfig": {
     "extends": [
       "react-app",
