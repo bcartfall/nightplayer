@@ -178,7 +178,7 @@ export default function Settings({ settings, saveSettings, }) {
           </>
         )}
         <Divider sx={{ m: 4 }} />
-        <Typography>Night Player v{packageInfo.version}</Typography>
+        <Typography>Night Player v{packageInfo.version} {packageInfo.isElectron ? '- Electron' : ''}</Typography>
       </div>
     </Grow>
   );
