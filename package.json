@@ -6,9 +6,9 @@
   "homepage": "https://bcartfall.github.io/nightplayer",
   "dependencies": {
     "dexie": "^3.2.3",
-    "electron-is-dev": "^2.0.0",
-    "electron-squirrel-startup": "^1.0.0",
-    "electron-store": "^8.1.0",
+    "electron-is-dev": "^3.0.0",
+    "electron-squirrel-startup": "^1.0.1",
+    "electron-store": "^11.0.0",
     "firebase": "^9.19.1",
     "react-player": "^2.12.0",
     "uuid": "^9.0.0"
@@ -23,7 +23,7 @@
     "electron:dev": "concurrently -k \"cross-env BROWSER=none npm start\" \"npm:electron\"",
     "electron": "wait-on http://127.0.0.1:3000 && electron .",
     "package": "react-scripts build && electron-forge package",
-    "make": "electron-forge make",
+    "make": "react-scripts build && electron-forge make",
     "publish": "electron-forge publish"
   },
   "eslintConfig": {
@@ -45,11 +45,12 @@
     ]
   },
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.4",
-    "@electron-forge/maker-deb": "^6.0.4",
-    "@electron-forge/maker-rpm": "^6.0.4",
-    "@electron-forge/maker-squirrel": "^6.0.4",
-    "@electron-forge/maker-zip": "^6.0.4",
+    "@electron-forge/cli": "^6.4.2",
+    "@electron-forge/maker-deb": "^6.4.2",
+    "@electron-forge/maker-rpm": "^6.4.2",
+    "@electron-forge/maker-squirrel": "^6.4.2",
+    "@electron-forge/maker-zip": "^6.4.2",
+    "@electron-forge/plugin-auto-unpack-natives": "^6.4.2",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@fontsource/roboto": "^4.5.8",
@@ -60,7 +61,7 @@
     "@testing-library/user-event": "^13.2.1",
     "concurrently": "^7.6.0",
     "cross-env": "^7.0.3",
-    "electron": "^22.2.0",
+    "electron": "^41.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.7.0",
