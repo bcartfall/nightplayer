@@ -63,13 +63,19 @@ function createWindow() {
   });
 
   // and load the index.html of the app.
-  // win.loadFile("index.html");
   if (isDev) {
     win.loadURL('http://localhost:3000');
   } else {
-    const prodPath = path.join(__dirname, '../build/index.html');
+    // Use path.resolve for more reliable path resolution with asar archives
+    const prodPath = path.resolve(__dirname, '..', 'build', 'index.html');
     console.log("Loading production path:", prodPath);
-    win.loadFile(prodPath);
+    win.loadFile(prodPath).catch(err => {
+      console.error("Failed to load production path:", err);
+      // Fallback: try loading from app.getAppPath()
+      const fallbackPath = path.join(app.getAppPath(), 'build', 'index.html');
+      console.log("Trying fallback path:", fallbackPath);
+      win.loadFile(fallbackPath);
+    });
   }
 
   // Open the DevTools.

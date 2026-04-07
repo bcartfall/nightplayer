@@ -9,7 +9,6 @@ module.exports = {
       /node_modules\/.*\.(test|spec)\.(js|ts|jsx|tsx)$/i,
       /node_modules\/.*\/(coverage|\.nyc_output)/i,
       /node_modules\/.*\/(\.git|\.github|\.circleci|\.travis\.yml)/i,
-      /^\/build/i,
       /^\/\.git/i,
       /^\/\.github/i,
       /^\/README\.md/i,
