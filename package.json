@@ -1,6 +1,6 @@
 {
   "name": "nightplayer",
-  "version": "0.9.24",
+  "version": "0.9.25",
   "isElectron": false,
   "private": true,
   "main": "public/electron.js",
