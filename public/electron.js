@@ -6,7 +6,7 @@
 
 const path = require('path');
 const { app, BrowserWindow, Menu } = require('electron');
-const isDev = require('electron-is-dev');
+const isDev = !app.isPackaged;
 
 const Store = require('electron-store').default;
 const store = new Store();
