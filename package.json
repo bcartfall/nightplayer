@@ -3,7 +3,7 @@
   "version": "0.9.23",
   "private": true,
   "main": "public/electron.js",
-  "homepage": "https://bcartfall.github.io/nightplayer",
+  "homepage": ".",
   "dependencies": {
     "dexie": "^3.2.3",
     "electron-is-dev": "^2.0.0",
@@ -24,7 +24,10 @@
     "electron": "wait-on http://127.0.0.1:3000 && electron .",
     "package": "react-scripts build && electron-forge package",
     "make": "electron-forge make",
-    "publish": "electron-forge publish"
+    "publish": "electron-forge publish",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build",
+    "tauri": "tauri"
   },
   "eslintConfig": {
     "extends": [
@@ -55,6 +58,7 @@
     "@fontsource/roboto": "^4.5.8",
     "@mui/icons-material": "^5.11.0",
     "@mui/material": "^5.11.4",
+    "@tauri-apps/cli": "^2.10.1",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^13.0.0",
     "@testing-library/user-event": "^13.2.1",
