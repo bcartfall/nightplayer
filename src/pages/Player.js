@@ -4,7 +4,7 @@
  * See README.md
  */
 
-import React, { useCallback, useContext, useEffect, useRef, useState,  } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState, memo } from 'react';
 import ReactPlayer from 'react-player';
 import { useParams, useNavigate, } from "react-router-dom";
 import { Box, Alert, Grid, Card, Typography, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Button, FormGroup, Snackbar, } from '@mui/material';
@@ -18,6 +18,84 @@ import PlayerContextMenu from '../components/PlayerContextMenu';
 import VideoList from '../components/VideoList';
 import Loading from '../components/Loading';
 import LogDialog from '../components/LogDialog';
+
+// SVG icon helpers
+const PlayIcon = () => (
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M8 5v14l11-7z"/></svg>
+);
+const PauseIcon = () => (
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+);
+const VolumeHighIcon = () => (
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+);
+const VolumeMuteIcon = () => (
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+);
+const FullscreenIcon = () => (
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+);
+const FullscreenExitIcon = () => (
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+);
+
+
+const ProgressBar = memo(function ProgressBar({ played, buffered, duration, progressBarRef, onProgressClick, formatTime }) {
+  return (
+    <>
+      {/* Progress bar */}
+      <div
+        ref={progressBarRef}
+        onClick={onProgressClick}
+        style={{
+          position: 'relative',
+          height: '4px',
+          borderRadius: '2px',
+          background: 'rgba(255,255,255,0.25)',
+          cursor: 'pointer',
+          marginBottom: '8px',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.height = '8px'; e.currentTarget.style.top = '2px'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.height = '4px'; e.currentTarget.style.top = '0px'; }}
+      >
+        {/* Buffered */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, bottom: 0,
+          width: `${buffered * 100}%`,
+          background: 'rgba(255,255,255,0.4)',
+          borderRadius: '2px',
+          pointerEvents: 'none',
+        }} />
+        {/* Played */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, bottom: 0,
+          width: `${played * 100}%`,
+          background: '#ff0000',
+          borderRadius: '2px',
+          pointerEvents: 'none',
+        }} />
+        {/* Scrubber dot */}
+        <div style={{
+          position: 'absolute', top: '50%',
+          left: `${played * 100}%`,
+          transform: 'translate(-50%, -50%)',
+          width: '12px', height: '12px',
+          background: '#ff0000',
+          borderRadius: '50%',
+          pointerEvents: 'none',
+        }} />
+      </div>
+    </>
+  );
+});
+
+const TimeDisplay = memo(function TimeDisplay({ played, duration, formatTime }) {
+  return (
+    <span style={{ color: '#fff', fontSize: '13px', fontFamily: 'Roboto, sans-serif', marginLeft: '4px' }}>
+      {formatTime(played * duration)} / {formatTime(duration)}
+    </span>
+  );
+});
 
 export default function Player(props) {
   const { setTitle } = useContext(LayoutContext);
@@ -212,6 +290,7 @@ export default function Player(props) {
   );
 
   const toggleFullscreen = useCallback(() => {
+    console.log('toggleFullscreen');
     if (!document.fullscreenElement) {
       // enter fullscreen
       if (hostedLocal.current) {
@@ -548,6 +627,7 @@ export default function Player(props) {
     if (!hostedLocal.current) {
       return;
     }
+    console.log('handleVideoClick');
 
     if (e.detail === 1) {
       // Start a timer for the single click action (250ms is standard for double-click detection)
@@ -568,22 +648,23 @@ export default function Player(props) {
     }
   }, [toggleFullscreen, playing, clickTimerRef, hideMouse, updatePlaying]);
 
-  const formatTime = (secs) => {
+  const formatTime = useCallback((secs) => {
     if (!secs || isNaN(secs)) return '0:00';
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
     const s = Math.floor(secs % 60);
     if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     return `${m}:${String(s).padStart(2, '0')}`;
-  };
+  }, []);
 
-  const handleProgressClick = (e) => {
+  const handleProgressClick = useCallback((e) => {
     if (!progressBarRef.current) return;
+    console.log('handleProgressClick');
     const rect = progressBarRef.current.getBoundingClientRect();
     const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     playerRef.current?.seekTo(fraction, 'fraction');
     setPlayed(fraction);
-  };
+  }, [progressBarRef, playerRef]);
 
   const handleVolumeChange = (e) => {
     const v = parseFloat(e.target.value);
@@ -596,26 +677,6 @@ export default function Player(props) {
   const toggleMute = () => {
     setMuted((prev) => !prev);
   };
-
-  // SVG icon helpers
-  const PlayIcon = () => (
-    <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M8 5v14l11-7z"/></svg>
-  );
-  const PauseIcon = () => (
-    <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-  );
-  const VolumeHighIcon = () => (
-    <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-  );
-  const VolumeMuteIcon = () => (
-    <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
-  );
-  const FullscreenIcon = () => (
-    <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
-  );
-  const FullscreenExitIcon = () => (
-    <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
-  );
 
   if (loading || (!video && !notFound)) {
     return <Loading style={{ paddingTop: "50px" }} />;
@@ -666,7 +727,7 @@ export default function Player(props) {
                       onPause={onPause}
                       onProgress={onProgress}
                       onDuration={onDuration}
-                      progressInterval={42}
+                      progressInterval={250}
                       width="100%"
                       height="100%"
                       loop={false}
@@ -688,58 +749,24 @@ export default function Player(props) {
                           userSelect: 'none',
                         }}
                       >
-                        {/* Progress bar */}
-                        <div
-                          ref={progressBarRef}
-                          onClick={handleProgressClick}
-                          style={{
-                            position: 'relative',
-                            height: '4px',
-                            borderRadius: '2px',
-                            background: 'rgba(255,255,255,0.25)',
-                            cursor: 'pointer',
-                            marginBottom: '8px',
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.height = '6px'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.height = '4px'; }}
-                        >
-                          {/* Buffered */}
-                          <div style={{
-                            position: 'absolute', top: 0, left: 0, bottom: 0,
-                            width: `${buffered * 100}%`,
-                            background: 'rgba(255,255,255,0.4)',
-                            borderRadius: '2px',
-                            pointerEvents: 'none',
-                          }} />
-                          {/* Played */}
-                          <div style={{
-                            position: 'absolute', top: 0, left: 0, bottom: 0,
-                            width: `${played * 100}%`,
-                            background: '#ff0000',
-                            borderRadius: '2px',
-                            pointerEvents: 'none',
-                          }} />
-                          {/* Scrubber dot */}
-                          <div style={{
-                            position: 'absolute', top: '50%',
-                            left: `${played * 100}%`,
-                            transform: 'translate(-50%, -50%)',
-                            width: '12px', height: '12px',
-                            background: '#ff0000',
-                            borderRadius: '50%',
-                            pointerEvents: 'none',
-                          }} />
-                        </div>
+                        <ProgressBar
+                          played={played}
+                          buffered={buffered}
+                          duration={duration}
+                          progressBarRef={progressBarRef}
+                          onProgressClick={handleProgressClick}
+                          formatTime={formatTime}
+                        />
 
                         {/* Bottom row */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {/* Play / Pause */}
                           <button
-                            onClick={() => { updatePlaying(!playing.current); }}
+                            onClick={() => { updatePlaying(!isPlaying); }}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}
-                            title={playing.current ? 'Pause (k)' : 'Play (k)'}
+                            title={isPlaying ? 'Pause (k)' : 'Play (k)'}
                           >
-                            {playing.current ? <PauseIcon /> : <PlayIcon />}
+                            {isPlaying ? <PauseIcon /> : <PlayIcon />}
                           </button>
 
                           {/* Volume */}
@@ -763,9 +790,7 @@ export default function Player(props) {
                           />
 
                           {/* Time */}
-                          <span style={{ color: '#fff', fontSize: '13px', fontFamily: 'Roboto, sans-serif', marginLeft: '4px' }}>
-                            {formatTime(played * duration)} / {formatTime(duration)}
-                          </span>
+                          <TimeDisplay played={played} duration={duration} formatTime={formatTime} />
 
                           {/* Spacer */}
                           <div style={{ flex: 1 }} />

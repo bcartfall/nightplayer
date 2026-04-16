@@ -178,19 +178,19 @@ class Video {
     async getYtpUrl(settings) {
         console.log("Getting physical file from yt-dlp gui");
         if (!settings.ytdlp.host) {
-        return;
+            return;
         }
         if (this.ytdlpComplete !== 1) {
-        console.error("Video is not done downloading.");
-        return;
+            console.error("Video is not done downloading.");
+            return;
         }
 
         // get information about file
         const response = await fetch(`${settings.ytdlp.host}/api/history/${encodeURIComponent(this.ytdlpUuid)}`, {
-        method: "GET",
+            method: "GET",
         });
         if (!response.ok) {
-        console.error("Error getting live history.");
+            console.error("Error getting live history.");
         }
         const data = await response.json();
         const filename = data.filename;
@@ -222,7 +222,11 @@ class Video {
             this.url = `https://www.youtube.com/watch?v=${json.items[0].id}`;
             this.title = json.items[0].snippet.title;
             this.description = json.items[0].snippet.description;
-            thumbnailUrl = json.items[0].snippet.thumbnails.standard.url;
+            thumbnailUrl = json.items?.[0]?.snippet?.thumbnails?.standard?.url;
+            if (!thumbnailUrl) {
+                // defer to default if standard not found
+                thumbnailUrl = json.items?.[0]?.snippet?.thumbnails?.default?.url;
+            }
             this.duration = YTDurationToSeconds(json.items[0].contentDetails.duration);
         } else if (this.source === 'twitch') {
             // twitch
@@ -277,6 +281,7 @@ class Video {
             console.log('Video not found, assuming video complete.');
             this.ytdlpComplete = 1;
             this.ytdlpProgress = 1.0;
+            this.ytdlpStatus = 'complete';
             await this.save();
             return;
         }
@@ -290,8 +295,11 @@ class Video {
 
         if (this.ytdlpComplete === 0) {
             // check again in 1s
+            if (this._timerUDP) {
+                clearTimeout(this._timerUDP);
+            }
             setTimeout(() => {
-                this.updateDownloadProgress(settings);
+                this._timerUDP = this.updateDownloadProgress(settings);
             }, 1000);
         }
     }

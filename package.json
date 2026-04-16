@@ -1,6 +1,6 @@
 {
   "name": "nightplayer",
-  "version": "0.9.24",
+  "version": "0.9.25",
   "isElectron": true,
   "private": true,
   "main": "public/electron.js",
@@ -25,15 +25,9 @@
   "scripts": {
     "start": "cross-env PORT=3000 react-scripts start",
     "start:ssl": "cross-env HTTPS=true PORT=3000 react-scripts start",
-    "forge:start": "electron-forge start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "electron:dev": "concurrently -k \"cross-env BROWSER=none npm start\" \"npm:electron\"",
-    "electron": "wait-on http://127.0.0.1:3000 && electron .",
-    "package": "react-scripts build && electron-forge package",
-    "make": "react-scripts build && electron-forge make",
-    "publish": "electron-forge publish"
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
