@@ -7,9 +7,8 @@
 const path = require('path');
 const { app, BrowserWindow, Menu } = require('electron');
 const isDev = require('electron-is-dev');
-const Store = require('electron-store');
 
-// store
+const Store = require('electron-store').default;
 const store = new Store();
 
 // disable smooth scrolling

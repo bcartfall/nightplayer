@@ -94,7 +94,7 @@ export default function App(props) {
       setError(e.toString());
     }
 
-    return null;
+    return [];
   }, [videos, setError,]);
 
   const saveSettings = useCallback(async (nSettings) => {
@@ -183,19 +183,19 @@ export default function App(props) {
     }
 
     // clear from archive
-    console.log(`Clearing video from archive`);
-    const responseArchive = await fetch(`${settings.ytdlp.host}/api/archiver`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        preset: "default",
-        items: [video.getArchiveId()],
-      }),
-    });
-    const responseDataArchive = await responseArchive.json();
-    console.log(responseDataArchive);
+    // console.log(`Clearing video from archive`);
+    // const responseArchive = await fetch(`${settings.ytdlp.host}/api/archiver`, {
+    //   method: "DELETE",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify({
+    //     preset: "default",
+    //     items: [video.getArchiveId()],
+    //   }),
+    // });
+    // const responseDataArchive = await responseArchive.json();
+    // console.log(responseDataArchive);
 
     // send POST add to queue
     console.log(`Sending url to download ${video.url}`);
@@ -208,6 +208,7 @@ export default function App(props) {
         {
           url: video.url,
           auto_start: true,
+          cli: '--no-download-archive',
         },
       ]),
     });
@@ -390,15 +391,6 @@ export default function App(props) {
       }
       setSettings(localSettings);
 
-      for (let video of videos) {
-        if (video.ytdlpComplete === 0) {
-          // resume download progress / status
-          setTimeout(() => {
-            video.updateDownloadProgress(settings);
-          }, 1000);
-        }
-      }
-
       try {
         await setDatabase(localSettings.databaseDriver ?? 'local', localSettings);
       } catch (e) {
@@ -410,6 +402,15 @@ export default function App(props) {
       const nVideos = await loadVideos();
       if (nVideos) {
         setVideos(nVideos);
+      }
+
+      for (let video of nVideos) {
+        if (video.ytdlpComplete === 0) {
+          // resume download progress / status
+          setTimeout(() => {
+            video.updateDownloadProgress(localSettings);
+          }, 1000);
+        }
       }
       setLoading(false);
     };
