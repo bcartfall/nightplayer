@@ -32,7 +32,8 @@ export default function VideoComponent({ video, index, dragIndex, dragDirection,
   const navigate = useNavigate();
   const [contextMenu, setContextMenu] = useState(null);
   const { autoplayRef, } = useContext(VideosContext);
-  const [ytdlpProgress, setYtdlpProgress] = useState(0);
+  const [ytdlpProgress, setYtdlpProgress] = useState(video.ytdlpProgress);
+  const [ytdlpComplete, setYtdlpComplete] = useState(video.ytdlpComplete);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -40,13 +41,16 @@ export default function VideoComponent({ video, index, dragIndex, dragDirection,
       if (video.ytdlpProgress !== ytdlpProgress) {
         setYtdlpProgress(video.ytdlpProgress);
       }
+      if (video.ytdlpComplete !== ytdlpComplete) {
+        setYtdlpComplete(video.ytdlpComplete);
+      }
     }, 42);
 
     // Cleanup function
     return () => {
       clearInterval(intervalId);
     };
-  }, [ytdlpProgress, setYtdlpProgress, video,]);
+  }, [ytdlpProgress, ytdlpComplete, video,]);
 
   const handleContextMenu = (event) => {
     event.preventDefault();
@@ -109,7 +113,7 @@ export default function VideoComponent({ video, index, dragIndex, dragDirection,
       <div onClick={playVideo}>
         <Grow key={video.uuid} in={true}>
           <Box className="video-card" sx={{borderRadius: '15px', overflow: 'hidden', backgroundColor: '#000', }}>
-            {video.ytdlpComplete === 0 && 
+            {ytdlpComplete === 0 && 
               <LinearProgress className="videoPlayerProgress" color="success" variant="determinate" value={Math.max(0, ytdlpProgress) * 100} />}
             <Card sx={{position: 'relative'}}>
               <Box className="cover">
@@ -127,11 +131,11 @@ export default function VideoComponent({ video, index, dragIndex, dragDirection,
             </Card>
             <Typography sx={{ m: 2, textOverflow: 'ellipsis', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', }}>{video.title}</Typography>
 
-            {video.ytdlpComplete === 0 &&
+            {ytdlpComplete === 0 &&
               <FileDownloadIcon fontSize="small" sx={{ position: 'absolute', left: '10px', top: '10px' }} />}
-            {video.ytdlpComplete === 0 &&
+            {ytdlpComplete === 0 &&
               <Chip label={speedChipValue(video)} variant="outlined" sx={{ position: 'absolute', left: '32px', top: '10px' }} />}
-            {video.ytdlpComplete === 1 &&
+            {ytdlpComplete === 1 &&
               <DownloadDoneIcon fontSize="small" sx={{ position: 'absolute', left: '10px', top: '10px' }} />}
 
             {progress > 0 &&
