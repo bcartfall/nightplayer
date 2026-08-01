@@ -21,22 +21,36 @@ import LogDialog from '../components/LogDialog';
 
 // SVG icon helpers
 const PlayIcon = () => (
-  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M8 5v14l11-7z"/></svg>
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M8 5v14l11-7z" /></svg>
 );
 const PauseIcon = () => (
-  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
 );
 const VolumeHighIcon = () => (
-  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" /></svg>
 );
 const VolumeMuteIcon = () => (
-  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" /></svg>
 );
 const FullscreenIcon = () => (
-  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" /></svg>
 );
 const FullscreenExitIcon = () => (
-  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+  <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" /></svg>
+);
+// Stretch Mode off: plain widescreen frame
+const StretchModeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="22" height="22">
+    <rect x="3" y="5" width="18" height="14" rx="1.5" />
+  </svg>
+);
+// Stretch Mode on: frame with the top ~75% region highlighted
+const StretchModeActiveIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="22" height="22">
+    <rect x="3" y="5" width="18" height="14" rx="1.5" />
+    <rect x="3" y="5" width="18" height="10.5" fill="white" opacity="0.35" stroke="none" />
+    <line x1="3" y1="15.5" x2="21" y2="15.5" strokeDasharray="2,2" />
+  </svg>
 );
 
 
@@ -136,6 +150,7 @@ export default function Player(props) {
   const progressBarRef = useRef(null);
   const fullscreen = useRef(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [stretchMode, setStretchMode] = useState(false);
   const snackTimeoutRef = useRef(null);
 
   // get active video
@@ -316,9 +331,17 @@ export default function Player(props) {
     hideMouse();
   }, [playerRef, hostedLocal, fullscreen, hideMouse, setIsFullscreen]);
 
+  const toggleStretchMode = useCallback(() => {
+    setStretchMode((prev) => {
+      const next = !prev;
+      showSnack(next ? "Stretch Mode on" : "Stretch Mode off");
+      return next;
+    });
+  }, [setStretchMode, showSnack]);
+
   const onKeyDown = useCallback(
     (e) => {
-      const hijackedKeys = [" ", "K", "F", "ARROWLEFT", "ARROWRIGHT", "ARROWDOWN", "ARROWUP", "N", "P"];
+      const hijackedKeys = [" ", "K", "F", "S", "ARROWLEFT", "ARROWRIGHT", "ARROWDOWN", "ARROWUP", "N", "P"];
       if (hijackedKeys.includes(e.key.toUpperCase())) {
         e.stopImmediatePropagation(); // Stops other listeners on the same element
         setMouseVisible(true);
@@ -364,6 +387,12 @@ export default function Player(props) {
 
           toggleFullscreen();
           return true;
+        case "S":
+          // stretch mode
+          e.preventDefault();
+
+          toggleStretchMode();
+          return true;
         case " ":
         case "K":
           if (e.ctrlKey) {
@@ -394,7 +423,7 @@ export default function Player(props) {
         }
       }
     },
-    [playing, seekPosition, skip, toggleFullscreen, hideMouse, updatePlaying, setMouseVisible, setControlsVisible, volume, showSnack],
+    [playing, seekPosition, skip, toggleFullscreen, toggleStretchMode, hideMouse, updatePlaying, setMouseVisible, setControlsVisible, volume, showSnack],
   );
 
   const onKeyUp = useCallback(() => {
@@ -405,11 +434,11 @@ export default function Player(props) {
         seekPosition.current,
         currentTime + seekPosition.current,
       );
-      
+
       playerRef.current?.seekTo(Math.min(currentTime + seekPosition.current, playerRef.current?.getDuration() - 1), "seconds");
     }
     seekPosition.current = 0;
-  }, [seekPosition, playerRef, ]);
+  }, [seekPosition, playerRef,]);
 
   const chooseBestQuality = useCallback(() => {
     if (video.source === "twitch") {
@@ -528,7 +557,7 @@ export default function Player(props) {
     }
   }, [playerRef, video]);
 
-  const onSeek = useCallback((seconds) => {}, []);
+  const onSeek = useCallback((seconds) => { }, []);
 
   const onDuration = useCallback((d) => {
     setDuration(d);
@@ -548,13 +577,13 @@ export default function Player(props) {
     setContextMenu(
       contextMenu === null
         ? {
-            mouseX: event.clientX + 2,
-            mouseY: event.clientY - 6,
-          }
+          mouseX: event.clientX + 2,
+          mouseY: event.clientY - 6,
+        }
         : // repeated contextmenu when it is already open closes it with Chrome 84 on Ubuntu
-          // Other native context menus might behave different.
-          // With this behavior we prevent contextmenu from the backdrop to re-locale existing context menus.
-          null,
+        // Other native context menus might behave different.
+        // With this behavior we prevent contextmenu from the backdrop to re-locale existing context menus.
+        null,
     );
   };
 
@@ -706,106 +735,143 @@ export default function Player(props) {
                 >
                   <div
                     ref={playerContainerRef}
-                    style={{ 
-                      width: "100%", 
-                      height: "100%", 
+                    style={{
+                      width: "100%",
+                      height: "100%",
                       cursor: mouseVisible ? 'default' : 'none',
                       position: 'relative',
+                      ...(isFullscreen && stretchMode
+                        ? {
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'flex-start',
+                          background: '#000',
+                        }
+                        : {}),
                     }}
                     onClick={handleVideoClick}
                   >
-                    <ReactPlayer
-                      ref={playerRef}
-                      url={videoUrl}
-                      playing={isPlaying}
-                      controls={!!video.controls && !hostedLocal.current}
-                      volume={volume}
-                      muted={muted}
-                      onReady={onReady}
-                      onPlay={onPlay}
-                      onSeek={onSeek}
-                      onPause={onPause}
-                      onProgress={onProgress}
-                      onDuration={onDuration}
-                      progressInterval={250}
-                      width="100%"
-                      height="100%"
-                      loop={false}
-                    />
+                    {/* Video box: constrained to the top 75% of the screen (centered) when
+                        Stretch Mode is active in fullscreen; otherwise fills the container. */}
+                    <div
+                      style={
+                        isFullscreen && stretchMode
+                          ? {
+                            position: 'relative',
+                            height: '75vh',
+                            maxWidth: '100%',
+                            aspectRatio: '16 / 9',
+                          }
+                          : {
+                            position: 'relative',
+                            width: '100%',
+                            height: '100%',
+                          }
+                      }
+                    >
+                      <ReactPlayer
+                        ref={playerRef}
+                        url={videoUrl}
+                        playing={isPlaying}
+                        controls={!!video.controls && !hostedLocal.current}
+                        volume={volume}
+                        muted={muted}
+                        onReady={onReady}
+                        onPlay={onPlay}
+                        onSeek={onSeek}
+                        onPause={onPause}
+                        onProgress={onProgress}
+                        onDuration={onDuration}
+                        progressInterval={250}
+                        width="100%"
+                        height="100%"
+                        loop={false}
+                        style={{ objectFit: 'contain' }}
+                      />
 
-                    {hostedLocal.current && (
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                          position: 'absolute',
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          background: 'linear-gradient(transparent, rgba(0,0,0,0.85))',
-                          padding: '24px 12px 10px',
-                          opacity: video.controls && controlsVisible ? 1 : 0,
-                          transition: 'opacity 0.25s ease',
-                          pointerEvents: video.controls && controlsVisible ? 'auto' : 'none',
-                          userSelect: 'none',
-                        }}
-                      >
-                        <ProgressBar
-                          played={played}
-                          buffered={buffered}
-                          duration={duration}
-                          progressBarRef={progressBarRef}
-                          onProgressClick={handleProgressClick}
-                          formatTime={formatTime}
-                        />
-
-                        {/* Bottom row */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {/* Play / Pause */}
-                          <button
-                            onClick={() => { updatePlaying(!isPlaying); }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}
-                            title={isPlaying ? 'Pause (k)' : 'Play (k)'}
-                          >
-                            {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                          </button>
-
-                          {/* Volume */}
-                          <button
-                            onClick={toggleMute}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}
-                            title={muted ? 'Unmute' : 'Mute'}
-                          >
-                            {muted || volume === 0 ? <VolumeMuteIcon /> : <VolumeHighIcon />}
-                          </button>
-                          <input
-                            type="range"
-                            min={0} max={1} step={0.02}
-                            value={muted ? 0 : volume}
-                            onChange={handleVolumeChange}
-                            style={{
-                              width: '72px',
-                              accentColor: '#fff',
-                              cursor: 'pointer',
-                            }}
+                      {hostedLocal.current && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            background: 'linear-gradient(transparent, rgba(0,0,0,0.85))',
+                            padding: '24px 12px 10px',
+                            opacity: video.controls && controlsVisible ? 1 : 0,
+                            transition: 'opacity 0.25s ease',
+                            pointerEvents: video.controls && controlsVisible ? 'auto' : 'none',
+                            userSelect: 'none',
+                          }}
+                        >
+                          <ProgressBar
+                            played={played}
+                            buffered={buffered}
+                            duration={duration}
+                            progressBarRef={progressBarRef}
+                            onProgressClick={handleProgressClick}
+                            formatTime={formatTime}
                           />
 
-                          {/* Time */}
-                          <TimeDisplay played={played} duration={duration} formatTime={formatTime} />
+                          {/* Bottom row */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {/* Play / Pause */}
+                            <button
+                              onClick={() => { updatePlaying(!isPlaying); }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}
+                              title={isPlaying ? 'Pause (k)' : 'Play (k)'}
+                            >
+                              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                            </button>
 
-                          {/* Spacer */}
-                          <div style={{ flex: 1 }} />
+                            {/* Volume */}
+                            <button
+                              onClick={toggleMute}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}
+                              title={muted ? 'Unmute' : 'Mute'}
+                            >
+                              {muted || volume === 0 ? <VolumeMuteIcon /> : <VolumeHighIcon />}
+                            </button>
+                            <input
+                              type="range"
+                              min={0} max={1} step={0.02}
+                              value={muted ? 0 : volume}
+                              onChange={handleVolumeChange}
+                              style={{
+                                width: '72px',
+                                accentColor: '#fff',
+                                cursor: 'pointer',
+                              }}
+                            />
 
-                          {/* Fullscreen */}
-                          <button
-                            onClick={toggleFullscreen}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}
-                            title="Fullscreen (f)"
-                          >
-                            {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
-                          </button>
+                            {/* Time */}
+                            <TimeDisplay played={played} duration={duration} formatTime={formatTime} />
+
+                            {/* Spacer */}
+                            <div style={{ flex: 1 }} />
+
+                            {/* Stretch Mode */}
+                            <button
+                              onClick={toggleStretchMode}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}
+                              title={stretchMode ? 'Stretch Mode: On (s)' : 'Stretch Mode: Off (s)'}
+                            >
+                              {stretchMode ? <StretchModeActiveIcon /> : <StretchModeIcon />}
+                            </button>
+
+                            {/* Fullscreen */}
+                            <button
+                              onClick={toggleFullscreen}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}
+                              title="Fullscreen (f)"
+                            >
+                              {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     <Snackbar
                       anchorOrigin={{ vertical: "top", horizontal: "right" }}
