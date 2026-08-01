@@ -17,7 +17,8 @@
         "height": 600,
         "resizable": true,
         "maximized": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "dragDropEnabled": false
       }
     ],
     "security": {
@@ -29,7 +30,6 @@
     "targets": "all",
     "windows": {
       "nsis": {
-        "createDesktopCheckbox": false,
         "installMode": "perMachine"
       }
     },
