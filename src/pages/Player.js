@@ -206,7 +206,7 @@ export default function Player(props) {
   }, [uuid, videos, setVideo, autoplayRef, setNotFound, updatePlaying]);
 
   useEffect(() => {
-    hostedLocal.current = (settings?.ytdlp.host && video?.ytdlpComplete === 1);
+    hostedLocal.current = (settings?.manager.host && video?.ytdlpComplete === 1);
   }, [video, settings]);
 
   const hideMouse = useCallback((playingOverride = null) => {

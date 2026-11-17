@@ -170,7 +170,7 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
           </ListItemIcon>
           <ListItemText>Move to Bottom</ListItemText>
         </MenuItem>
-        {settings.ytdlp.host && video.ytdlpComplete === -1 && (
+        {settings.manager.host && video.ytdlpComplete === -1 && (
           <div>
             <Divider />
             <MenuItem onClick={onDownload}>
@@ -181,7 +181,7 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
             </MenuItem>
           </div>
         )}
-        {settings.ytdlp.host && video.ytdlpComplete === 1 && (
+        {settings.manager.host && video.ytdlpComplete === 1 && (
           <div>
             <Divider />
             <MenuItem onClick={onOpenDownloaded}>
