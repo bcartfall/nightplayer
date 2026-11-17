@@ -1,10 +1,10 @@
 {
   "name": "nightplayer",
-  "version": "1.0.0",
+  "version": "0.9.27",
   "isElectron": false,
   "private": true,
   "main": "public/electron.js",
-  "homepage": ".",
+  "homepage": "https://bcartfall.github.io/nightplayer",
   "dependencies": {
     "dexie": "^3.2.3",
     "firebase": "^9.19.1",
@@ -16,10 +16,7 @@
     "start:ssl": "cross-env HTTPS=true PORT=3000 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "desktop:dev": "tauri dev",
-    "desktop:build": "tauri build",
-    "tauri": "tauri"
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
@@ -45,7 +42,6 @@
     "@fontsource/roboto": "^4.5.8",
     "@mui/icons-material": "^5.11.0",
     "@mui/material": "^5.11.4",
-    "@tauri-apps/cli": "^2.10.1",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^13.0.0",
     "@testing-library/user-event": "^13.2.1",
