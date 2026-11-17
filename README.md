@@ -31,6 +31,16 @@ yarn package
 yarn start
 ```
 
+# Tauri: Desktop Application
+
+```
+# run development
+yarn desktop:dev
+
+# build
+yarn desktop:build
+```
+
 ## Database
 
 ### IndexedDB

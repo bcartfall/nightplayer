@@ -7,6 +7,9 @@
 import { getDatabase } from '../database/Database';
 import TwitchAPI from '../models/TwitchAPI';
 import { v4 as uuidv4 } from 'uuid';
+import { getManager } from '../manager/Manager';
+
+export const VIDEO_SCHEMA_VERSION = '2026-04-06';
 
 export function isVideoUrl(url) {
     return url.includes('youtube.com') || url.includes('youtu.be') || url.includes('twitch.tv');
@@ -176,8 +179,8 @@ class Video {
     }
 
     async getYtpUrl(settings) {
-        console.log("Getting physical file from yt-dlp gui");
-        if (!settings.ytdlp.host) {
+        console.log("Getting physical file manager");
+        if (!settings.manager.host) {
             return;
         }
         if (this.ytdlpComplete !== 1) {
@@ -186,15 +189,15 @@ class Video {
         }
 
         // get information about file
-        const response = await fetch(`${settings.ytdlp.host}/api/history/${encodeURIComponent(this.ytdlpUuid)}`, {
-            method: "GET",
-        });
-        if (!response.ok) {
-            console.error("Error getting live history.");
+        let managerVideo;
+        try {
+            managerVideo = await getManager().info(this);
+        } catch (e) {
+            console.error(e);
+            return;
         }
-        const data = await response.json();
-        const filename = data.filename;
-        return `${settings.ytdlp.host}/api/download/${encodeURIComponent(filename)}`;
+        
+        return `${settings.manager.host}${managerVideo.links.stream}`;
     }
 
     /**
@@ -252,8 +255,10 @@ class Video {
         this.thumbnail = await Video.fetchThumbnail(thumbnailUrl);
     }
 
-    async updateDownloadProgress(settings) {
-        console.log('Updating download progress.');
+    async updateDownloadProgress(settings, managerVideo) {
+        const uuid = this.ytdlpUuid;
+        console.log(`Updating download progress. uuid=${uuid}`);
+        
         if (!settings || !settings.ytdlp) {
             console.log('Settings not loaded.', settings);
             return;
@@ -267,18 +272,14 @@ class Video {
             return;
         }
 
-        // set GET request
-        const response = await fetch(`${settings.ytdlp.host}/api/history/live`, {
-            method: 'GET',
-        });
-        if (!response.ok) {
-            console.error('Error sending download request.');
+        if (!managerVideo) {
+            managerVideo = await getManager().info(this);
+            console.log(managerVideo);
         }
-        const responseData = await response.json();
 
-        let item = responseData.queue[this.ytdlpUuid];
-        if (!item) {
-            console.log('Video not found, assuming video complete.');
+        if (!managerVideo || managerVideo.status === 'finished') {
+            // finished or not found
+            console.log(`Finished or not found. uuid=${uuid}`);
             this.ytdlpComplete = 1;
             this.ytdlpProgress = 1.0;
             this.ytdlpStatus = 'complete';
@@ -286,22 +287,23 @@ class Video {
             return;
         }
 
-        const percentage = item.percent;
+        console.log(`Reading eventStreamm. uuid=${uuid}`);
 
-        this.ytdlpProgress = percentage * 0.01;
-        this.ytdlpSpeed = item.speed;
-        this.ytdlpStatus = item.status;
-        console.log(`progress = ${this.ytdlpProgress}, speed=${this.ytdlpSpeed}`);
+        await getManager().eventStream(managerVideo, (ev, v) => {
+            if (ev === 'deleted') return false;
+            
+            this.ytdlpProgress = v.percent * 0.01;
+            this.ytdlpSpeed = v.speed;
+            this.ytdlpStatus = v.status;
 
-        if (this.ytdlpComplete === 0) {
-            // check again in 1s
-            if (this._timerUDP) {
-                clearTimeout(this._timerUDP);
-            }
-            setTimeout(() => {
-                this._timerUDP = this.updateDownloadProgress(settings);
-            }, 1000);
-        }
+            return ev !== 'done';
+          });
+        console.log(`Stream completed. uuid=${uuid}`);
+
+        this.ytdlpComplete = 1;
+        this.ytdlpProgress = 1.0;
+        this.ytdlpStatus = 'complete';
+        await this.save();
     }
 
     static async fetchThumbnail(thumbnailUrl) {
@@ -343,7 +345,7 @@ class Video {
                 delete object.thumbnailUrl;
             }
         }
-        object.schemaVersion = "2026-04-06";
+        object.schemaVersion = VIDEO_SCHEMA_VERSION;
         return object;
     }
 };
