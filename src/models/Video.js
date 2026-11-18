@@ -197,7 +197,9 @@ class Video {
             return;
         }
         
-        return `${settings.manager.host}${managerVideo.links.stream}`;
+        return {
+            stream: `${settings.manager.host}${managerVideo.links.stream}`, storyboard: `${settings.manager.host}${managerVideo.links.storyboard}`
+        };
     }
 
     /**
