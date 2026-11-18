@@ -53,8 +53,60 @@ const StretchModeActiveIcon = () => (
   </svg>
 );
 
+// ---- Storyboard (.sbb) support -------------------------------------------------------------
+// A .sbb file (created by nightplayer-manager) holds BIG JPEG sheets, each a rows x columns grid of
+// small preview images taken `fps` times per second. Layout (little-endian): 8 byte magic, u32 version,
+// u32 sheet count, u32 width, u32 height, f64 fps, u32 rows, u32 columns, 24 reserved bytes, then
+// 20 bytes per sheet (u32 index, u32 offset, u32 size, f64 seconds covered), then the JPEG data.
+const SBB_MAGIC = [0x53, 0x54, 0x4f, 0x52, 0x59, 0x73, 0x62, 0x1a];
+const SBB_SCALE = 2; // 160x90 frames are shown at 320x180
 
-const ProgressBar = memo(function ProgressBar({ played, buffered, duration, progressBarRef, onProgressClick, formatTime }) {
+function parseSbb(arrayBuffer) {
+  if (arrayBuffer.byteLength < 64) return null;
+  const data = new DataView(arrayBuffer);
+  for (let i = 0; i < SBB_MAGIC.length; i++) {
+    if (data.getUint8(i) !== SBB_MAGIC[i]) return null;
+  }
+  const count = data.getUint32(12, true);
+  const width = data.getUint32(16, true);
+  const height = data.getUint32(20, true);
+  const fps = data.getFloat64(24, true);
+  const rows = data.getUint32(32, true);
+  const columns = data.getUint32(36, true);
+  if (!count || !width || !height || !(fps > 0) || !rows || !columns || 64 + count * 20 > arrayBuffer.byteLength) {
+    return null;
+  }
+  const sheets = [];
+  for (let i = 0; i < count; i++) {
+    const at = 64 + i * 20;
+    sheets.push({
+      offset: data.getUint32(at + 4, true),
+      size: data.getUint32(at + 8, true),
+      duration: data.getFloat64(at + 12, true),
+    });
+  }
+  return { arrayBuffer, width, height, fps, rows, columns, sheets };
+}
+
+/** Which sheet, and which column/row inside it, shows the preview for `time` seconds. */
+function findStoryboardFrame(sb, time) {
+  let start = 0;
+  for (let i = 0; i < sb.sheets.length; i++) {
+    const sheet = sb.sheets[i];
+    if (time < start + sheet.duration || i === sb.sheets.length - 1) {
+      const frames = Math.min(sb.rows * sb.columns, Math.max(1, Math.round(sheet.duration * sb.fps)));
+      const p = Math.min(frames - 1, Math.max(0, Math.floor((time - start) * sb.fps)));
+      return { sheet: i, x: p % sb.columns, y: Math.floor(p / sb.columns) };
+    }
+    start += sheet.duration;
+  }
+  return null;
+}
+
+const ProgressBar = memo(function ProgressBar({
+  played, buffered, duration, progressBarRef, onProgressClick, formatTime,
+  previewRef, thumbRef, previewTimeRef, onHoverStart, onHover, onHoverEnd,
+}) {
   return (
     <>
       {/* Progress bar */}
@@ -69,9 +121,43 @@ const ProgressBar = memo(function ProgressBar({ played, buffered, duration, prog
           cursor: 'pointer',
           marginBottom: '8px',
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.height = '8px'; e.currentTarget.style.top = '2px'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.height = '4px'; e.currentTarget.style.top = '0px'; }}
+        onMouseEnter={(e) => { e.currentTarget.style.height = '8px'; e.currentTarget.style.top = '2px'; onHoverStart(); }}
+        onMouseMove={onHover}
+        onMouseLeave={(e) => { e.currentTarget.style.height = '4px'; e.currentTarget.style.top = '0px'; onHoverEnd(); }}
       >
+        {/* Storyboard preview (hidden until the mouse is over the bar and the storyboard has loaded) */}
+        <div
+          ref={previewRef}
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 14px)',
+            left: 0,
+            display: 'none',
+            flexDirection: 'column',
+            alignItems: 'center',
+            pointerEvents: 'none',
+            zIndex: 2,
+          }}
+        >
+          <div
+            ref={thumbRef}
+            style={{
+              boxSizing: 'content-box',
+              width: `${160 * SBB_SCALE}px`,
+              height: `${90 * SBB_SCALE}px`,
+              border: '2px solid #fff',
+              borderRadius: '4px',
+              background: '#000 no-repeat',
+            }}
+          />
+          <span
+            ref={previewTimeRef}
+            style={{
+              marginTop: '4px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(0,0,0,0.75)',
+              color: '#fff', fontSize: '13px', fontFamily: 'Roboto, sans-serif',
+            }}
+          >0:00</span>
+        </div>
         {/* Buffered */}
         <div style={{
           position: 'absolute', top: 0, left: 0, bottom: 0,
@@ -133,6 +219,8 @@ export default function Player(props) {
   const [showLogDialog, setShowLogDialog] = useState(false);
   const seekPosition = useRef(0);
   const [videoUrl, setVideoUrl] = useState("");
+  const [storyBoardUrl, setStoryBoardUrl] = useState("");
+  
   const hasSeekedRef = useRef(false);
   const clickTimerRef = useRef(null);
   const [mouseVisible, setMouseVisible] = useState(true);
@@ -152,6 +240,15 @@ export default function Player(props) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [stretchMode, setStretchMode] = useState(false);
   const snackTimeoutRef = useRef(null);
+
+  // Storyboard preview (only for locally hosted videos); all DOM updates go through refs so that
+  // moving the mouse does not re-render the player.
+  const storyboardRef = useRef(null);   // { ...parsed .sbb, urls: [] } or null
+  const previewRef = useRef(null);
+  const thumbRef = useRef(null);
+  const previewTimeRef = useRef(null);
+  const hoverActiveRef = useRef(false);
+  const lastSheetRef = useRef(-1);
 
   // get active video
   let { uuid } = useParams(); // get id from url (e.g. /player/:uuid)
@@ -257,20 +354,63 @@ export default function Player(props) {
       // 1. Handle the "empty" or "loading" state
       if (!video) {
         setVideoUrl("");
+        setStoryBoardUrl("");
         return;
       }
 
       // 2. Perform your logic
       if (hostedLocal.current) {
-        const url = await video.getYtpUrl(settings);
-        setVideoUrl(url);
+        const { stream, storyboard } = await video.getYtpUrl(settings);
+        setVideoUrl(stream);
+        setStoryBoardUrl(storyboard);
       } else {
         setVideoUrl(video.url ?? "");
+        setStoryBoardUrl("");
       }
     };
 
     fetchUrl();
   }, [video, settings, hostedLocal]); // Re-run whenever video or settings change
+
+  // Load the storyboard (.sbb) for locally hosted videos. A missing storyboard (404, not generated
+  // yet, ffmpeg failed) is not an error: there is simply no preview.
+  useEffect(() => {
+    storyboardRef.current = null;
+    lastSheetRef.current = -1;
+    if (!hostedLocal.current || !videoUrl) {
+      return undefined;
+    }
+    const url = storyBoardUrl;
+    if (!url) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let loaded = null;
+    (async () => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          return;
+        }
+        const sb = parseSbb(await res.arrayBuffer());
+        if (!cancelled && sb) {
+          loaded = { ...sb, urls: [] };
+          storyboardRef.current = loaded;
+        }
+      } catch (err) {
+        console.log("Could not load storyboard", err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (storyboardRef.current === loaded) {
+        storyboardRef.current = null;
+      }
+      loaded?.urls.forEach((u) => u && URL.revokeObjectURL(u));
+    };
+  }, [videoUrl, hostedLocal, storyBoardUrl]);
 
   const saveProgress = useCallback(
     (source) => {
@@ -695,6 +835,66 @@ export default function Player(props) {
     setPlayed(fraction);
   }, [progressBarRef, playerRef]);
 
+  const handleProgressHoverStart = useCallback(() => {
+    hoverActiveRef.current = true;
+    if (storyboardRef.current && previewRef.current) {
+      previewRef.current.style.display = 'flex';
+    }
+  }, []);
+
+  const handleProgressHoverEnd = useCallback(() => {
+    hoverActiveRef.current = false;
+    if (previewRef.current) {
+      previewRef.current.style.display = 'none';
+    }
+  }, []);
+
+  const handleProgressHover = useCallback((e) => {
+    const sb = storyboardRef.current;
+    const preview = previewRef.current;
+    const thumb = thumbRef.current;
+    const bar = progressBarRef.current;
+    if (!sb || !preview || !thumb || !bar || !duration) {
+      return;
+    }
+    const rect = bar.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const time = (x / rect.width) * duration;
+
+    const frame = findStoryboardFrame(sb, time);
+    if (!frame) {
+      return;
+    }
+    preview.style.display = 'flex';
+
+    // show the right sheet (object URLs are created lazily and cached)
+    if (lastSheetRef.current !== frame.sheet) {
+      lastSheetRef.current = frame.sheet;
+      if (!sb.urls[frame.sheet]) {
+        const { offset, size } = sb.sheets[frame.sheet];
+        sb.urls[frame.sheet] = URL.createObjectURL(
+          new Blob([sb.arrayBuffer.slice(offset, offset + size)], { type: 'image/jpeg' }),
+        );
+      }
+      thumb.style.backgroundImage = `url('${sb.urls[frame.sheet]}')`;
+    }
+
+    // size of one frame, the whole sheet, and the offset of the wanted frame inside it
+    const fw = sb.width * SBB_SCALE, fh = sb.height * SBB_SCALE;
+    thumb.style.width = `${fw}px`;
+    thumb.style.height = `${fh}px`;
+    thumb.style.backgroundSize = `${fw * sb.columns}px ${fh * sb.rows}px`;
+    thumb.style.backgroundPosition = `${-frame.x * fw}px ${-frame.y * fh}px`;
+
+    if (previewTimeRef.current) {
+      previewTimeRef.current.textContent = formatTime(time);
+    }
+
+    // centre on the mouse, but keep it inside the bar
+    const pw = preview.offsetWidth;
+    preview.style.left = `${Math.max(0, Math.min(rect.width - pw, x - pw / 2))}px`;
+  }, [duration, formatTime, progressBarRef]);
+
   const handleVolumeChange = (e) => {
     const v = parseFloat(e.target.value);
     console.log("setVolume", v);
@@ -812,6 +1012,12 @@ export default function Player(props) {
                             progressBarRef={progressBarRef}
                             onProgressClick={handleProgressClick}
                             formatTime={formatTime}
+                            previewRef={previewRef}
+                            thumbRef={thumbRef}
+                            previewTimeRef={previewTimeRef}
+                            onHoverStart={handleProgressHoverStart}
+                            onHover={handleProgressHover}
+                            onHoverEnd={handleProgressHoverEnd}
                           />
 
                           {/* Bottom row */}

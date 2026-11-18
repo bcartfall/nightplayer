@@ -363,9 +363,9 @@ export default function App(props) {
 
   const openDownloadedVideo = useCallback(
     async (video) => {
-      const url = await video.getYtpUrl(settings);
-      if (url) {
-        window.open(url, "_blank");
+      const { stream } = await video.getYtpUrl(settings);
+      if (stream) {
+        window.open(stream, "_blank");
       } else {
         console.error("Error getting url");
       }
