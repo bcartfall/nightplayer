@@ -169,7 +169,7 @@ export default function App(props) {
       }
 
       // set order to the last video + 1
-      let nVideos;
+      let nVideos, saveAll = false;
       if (videos.length > 0 && addBottom) {
         // add video to bottom
         video.order = videos[videos.length - 1].order + 1;
@@ -178,11 +178,12 @@ export default function App(props) {
         // add video to top
         video.order = 0; // this will be saved later
         nVideos = [video, ...videos];
+        saveAll = true;
+
         for (let i in videos) {
           i = parseInt(i, 10);
           const tVideo = videos[i];
           tVideo.order = i + 1;
-          await tVideo.save(true);
         }
       }
 
@@ -201,9 +202,24 @@ export default function App(props) {
       setVideos(nVideos);
 
       // save video to DB
-      console.log('Storing video', video);
-      await video.save();
-      console.log('Done storing.');
+
+      // save all videos in batch
+      if (saveAll) {
+        console.log('Saving all videos.');
+        let batchItems = [];
+        for (let tVideo of videos) {
+          batchItems.push({
+            key: tVideo.uuid,
+            value: tVideo.toObject(),
+          });
+        }
+        await getDatabase().putMultiple('videos', batchItems);
+      } else {
+        console.log('Saving new video.', video);
+        await video.save();
+      }
+
+      console.log('Done saving.');
 
       // download immediately
       if (downloadImmediately) {
@@ -373,6 +389,21 @@ export default function App(props) {
     [settings],
   );
 
+  const deleteDownloadedVideo = useCallback(
+    async (video) => {
+      try {
+        await getManager().delete(video);
+
+        video.ytdlpUuid = "";
+        video.ytdlpComplete = -1;
+        await video.save();
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    [],
+  );
+
   const onDragEnter = useCallback((e) => {
     e.preventDefault();
     dragRef.current++;
@@ -473,7 +504,7 @@ export default function App(props) {
   return (
     <ThemeProvider theme={darkTheme}>
       <LayoutContext.Provider value={{ title, setTitle, error, setError, snack, setSnack, }}>
-        <VideosContext.Provider value={{ videos, settings, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, downloadVideo, openDownloadedVideo, loading, updateLastAction, autoplayRef, }}>
+        <VideosContext.Provider value={{ videos, settings, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, downloadVideo, openDownloadedVideo, deleteDownloadedVideo, loading, updateLastAction, autoplayRef, }}>
           <CssBaseline />
           <div className="app" id="app" onDrop={onDrop} onDragEnter={onDragEnter} onDragOver={(e) => e.preventDefault()} onDragLeave={onDragLeave} onMouseMove={onMouseMove} onKeyUp={onKeyUp} onClick={onClick} onContextMenu={handleContextMenu}>
             <HashRouter>

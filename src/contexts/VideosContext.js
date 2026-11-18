@@ -16,6 +16,7 @@ export default createContext({
     restoreVideo: (video) => {},
     downloadvideo: (video) => {},
     openDownloadedVideo: (video) => {},
+    deleteDownloadedVideo: (video) => { },
     loading: false,
     updateLastAction: () => {},
     autoplayRef: {current: false},

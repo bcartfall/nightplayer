@@ -21,6 +21,10 @@ export default class IDatabase {
         throw new Error('Not implemented.');
     }
 
+    async putMultiple(table, items) {
+        throw new Error('Not implemented.');
+    }
+
     async delete(table, key, options = {}) {
         throw new Error('Not implemented.');
     }

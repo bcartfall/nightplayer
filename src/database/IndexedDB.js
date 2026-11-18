@@ -43,8 +43,16 @@ export default class IndexedDB extends IDatabase {
         }
     }
 
-    async put(table, key, value) {
+    async put(table, _key, value) {
+        // uses uuid in value to set so it doesn't need key
         await this._db[table].put(value);
+    }
+
+    async putMultiple(table, items) {
+        // we don't bother with a batch set because local DB is fast
+        for (const { key, value } of items) {
+            await this.put(table, key, value);
+        }
     }
 
     async delete(table, key, options = {}) {
