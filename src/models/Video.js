@@ -169,6 +169,22 @@ class Video {
         return this.thumbnail.base64;
     }
 
+    /**
+     * Numeric Twitch video id (e.g. 2883771975), or null if not a Twitch video.
+     */
+    getTwitchId() {
+        if (this.source !== 'twitch') {
+            return null;
+        }
+        const id = twitch_parser(this.url);
+        if (id) {
+            return id;
+        }
+        // fallback: last path segment, e.g. twitch.tv/andy/video/123?filter=archives
+        const last = this.url.split('?')[0].split('/').filter(Boolean).pop();
+        return /^\d+$/.test(last ?? '') ? last : null;
+    }
+
     getArchiveId() {
         if (this.source === 'youtube') {
             return 'youtube ' + youtube_parser(this.url);

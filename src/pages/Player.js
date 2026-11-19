@@ -59,7 +59,6 @@ const StretchModeActiveIcon = () => (
 // u32 sheet count, u32 width, u32 height, f64 fps, u32 rows, u32 columns, 24 reserved bytes, then
 // 20 bytes per sheet (u32 index, u32 offset, u32 size, f64 seconds covered), then the JPEG data.
 const SBB_MAGIC = [0x53, 0x54, 0x4f, 0x52, 0x59, 0x73, 0x62, 0x1a];
-const SBB_SCALE = 2; // 160x90 frames are shown at 320x180
 
 function parseSbb(arrayBuffer) {
   if (arrayBuffer.byteLength < 64) return null;
@@ -143,8 +142,8 @@ const ProgressBar = memo(function ProgressBar({
             ref={thumbRef}
             style={{
               boxSizing: 'content-box',
-              width: `${160 * SBB_SCALE}px`,
-              height: `${90 * SBB_SCALE}px`,
+              width: `320px`,
+              height: `180px`,
               border: '2px solid #fff',
               borderRadius: '4px',
               background: '#000 no-repeat',
@@ -220,7 +219,7 @@ export default function Player(props) {
   const seekPosition = useRef(0);
   const [videoUrl, setVideoUrl] = useState("");
   const [storyBoardUrl, setStoryBoardUrl] = useState("");
-  
+
   const hasSeekedRef = useRef(false);
   const clickTimerRef = useRef(null);
   const [mouseVisible, setMouseVisible] = useState(true);
@@ -880,7 +879,9 @@ export default function Player(props) {
     }
 
     // size of one frame, the whole sheet, and the offset of the wanted frame inside it
-    const fw = sb.width * SBB_SCALE, fh = sb.height * SBB_SCALE;
+    const scale = 180 / sb.height;
+
+    const fw = sb.width * scale, fh = sb.height * scale;
     thumb.style.width = `${fw}px`;
     thumb.style.height = `${fh}px`;
     thumb.style.backgroundSize = `${fw * sb.columns}px ${fh * sb.rows}px`;

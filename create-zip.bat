@@ -1,0 +1,1 @@
+git archive --format=zip --output=nightplayer.zip HEAD

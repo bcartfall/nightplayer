@@ -11,4 +11,5 @@ export default createContext({
     setTitle: () => {},
     error: '',
     setError: () => {},
+    pasteUrl: () => {},
 });
