@@ -15,13 +15,14 @@ import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom';
 import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileOpenIcon from "@mui/icons-material/FileOpen";
+import DeleteIcon from '@mui/icons-material/Delete';
 
 import VideosContext from '../contexts/VideosContext';
 import LayoutContext from '../contexts/LayoutContext';
 import PlayerContext from '../contexts/PlayerContext';
 
 export default function VideoContextMenu({ video, contextMenu, onClose, currentVideo, setCurrentVideo, }) {
-  const { removeVideo, restoreVideo, saveVideo, changeVideoOrder, videos, settings, downloadVideo, openDownloadedVideo, } = useContext(VideosContext);
+  const { removeVideo, restoreVideo, saveVideo, changeVideoOrder, videos, settings, downloadVideo, openDownloadedVideo, deleteDownloadedVideo, } = useContext(VideosContext);
   const { setSnack } = useContext(LayoutContext);
   const playerContext = useContext(PlayerContext);
 
@@ -110,6 +111,11 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
     onClose();
   }, [video, openDownloadedVideo, onClose]);
 
+  const onDeleteDownloaded = useCallback(() => {
+    deleteDownloadedVideo(video);
+    onClose();
+  }, [video, deleteDownloadedVideo, onClose]);
+
   return (
     <>
       <Menu
@@ -128,6 +134,16 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
           </ListItemIcon>
           <ListItemText>Remove Video from Playlist</ListItemText>
         </MenuItem>
+        {settings.manager.host && video.ytdlpComplete === 1 && (
+          <div>
+            <MenuItem onClick={onDeleteDownloaded}>
+              <ListItemIcon>
+                <DeleteIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Delete Downloaded Video</ListItemText>
+            </MenuItem>
+          </div>
+        )}
         <Divider />
         <MenuItem onClick={onToggleControls}>
           <ListItemIcon>

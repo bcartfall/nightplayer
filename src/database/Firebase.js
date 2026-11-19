@@ -81,6 +81,27 @@ class Firebase extends IDatabase {
         return value;
     }
 
+    async putMultiple(table, items) {
+        if (!this.isFirebaseConfigured()) {
+            throw new Error('Firebase settings are not configured yet.');
+        }
+
+        try {
+            const batch = writeBatch(this._db);
+
+            for (const { key, value } of items) {
+                batch.set(doc(this._db, table, key), value);
+            }
+
+            await batch.commit();
+
+            return items;
+        } catch (e) {
+            console.error('Batch save failed:', e);
+            throw e;
+        }
+    }
+
     async delete(table, key, options = {}) {
         if (!this.isFirebaseConfigured()) {
             throw new Error('Firebase settings are not configured yet.');
