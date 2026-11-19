@@ -4,7 +4,7 @@
  * See README.md
  */
 
-import React, { useCallback, useContext, } from 'react';
+import React, { useCallback, useContext, useState, } from 'react';
 
 import { Menu, MenuItem, ListItemIcon, ListItemText, Divider, Button, } from '@mui/material';
 import PlaylistRemoveIcon from '@mui/icons-material/PlaylistRemove';
@@ -16,14 +16,17 @@ import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileOpenIcon from "@mui/icons-material/FileOpen";
 import DeleteIcon from '@mui/icons-material/Delete';
+import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 
 import VideosContext from '../contexts/VideosContext';
 import LayoutContext from '../contexts/LayoutContext';
 import PlayerContext from '../contexts/PlayerContext';
+import TwitchBroadcastsDialog from './TwitchBroadcastsDialog';
 
 export default function VideoContextMenu({ video, contextMenu, onClose, currentVideo, setCurrentVideo, }) {
   const { removeVideo, restoreVideo, saveVideo, changeVideoOrder, videos, settings, downloadVideo, openDownloadedVideo, deleteDownloadedVideo, } = useContext(VideosContext);
-  const { setSnack } = useContext(LayoutContext);
+  const { setSnack, pasteUrl } = useContext(LayoutContext);
+  const [showBroadcasts, setShowBroadcasts] = useState(false);
   const playerContext = useContext(PlayerContext);
 
   const onToggleControls = useCallback(() => {
@@ -116,6 +119,11 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
     onClose();
   }, [video, deleteDownloadedVideo, onClose]);
 
+  const onShowBroadcasts = useCallback(() => {
+    onClose();
+    setShowBroadcasts(true);
+  }, [onClose,]);
+
   return (
     <>
       <Menu
@@ -165,6 +173,14 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
           </ListItemIcon>
           <ListItemText>Copy Video URL</ListItemText>
         </MenuItem>
+        {video.source === 'twitch' && (
+          <MenuItem onClick={onShowBroadcasts}>
+            <ListItemIcon>
+              <VideoLibraryIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Show Past Broadcasts</ListItemText>
+          </MenuItem>
+        )}
         <Divider />
         <MenuItem
           onClick={() => {
@@ -209,6 +225,14 @@ export default function VideoContextMenu({ video, contextMenu, onClose, currentV
           </div>
         )}
       </Menu>
+      {video.source === 'twitch' && (
+        <TwitchBroadcastsDialog
+          open={showBroadcasts}
+          video={video}
+          onClose={() => setShowBroadcasts(false)}
+          onAdd={pasteUrl}
+        />
+      )}
     </>
   );
 };

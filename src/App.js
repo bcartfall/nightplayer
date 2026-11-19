@@ -503,7 +503,7 @@ export default function App(props) {
 
   return (
     <ThemeProvider theme={darkTheme}>
-      <LayoutContext.Provider value={{ title, setTitle, error, setError, snack, setSnack, }}>
+      <LayoutContext.Provider value={{ title, setTitle, error, setError, snack, setSnack, pasteUrl: onPasteUrl, }}>
         <VideosContext.Provider value={{ videos, settings, addVideoUrl, saveVideo, changeVideoOrder, removeVideo, restoreVideo, downloadVideo, openDownloadedVideo, deleteDownloadedVideo, loading, updateLastAction, autoplayRef, }}>
           <CssBaseline />
           <div className="app" id="app" onDrop={onDrop} onDragEnter={onDragEnter} onDragOver={(e) => e.preventDefault()} onDragLeave={onDragLeave} onMouseMove={onMouseMove} onKeyUp={onKeyUp} onClick={onClick} onContextMenu={handleContextMenu}>
